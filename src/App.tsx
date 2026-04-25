@@ -48,7 +48,8 @@ function App() {
       }
 
       if (data) {
-        setMessage({ text: `Login successful! Welcome ${data.first_mid_name} ${data.last_name}`, type: 'success' });
+        const user = data as any;
+        setMessage({ text: `Login successful! Welcome ${user.first_mid_name} ${user.last_name}`, type: 'success' });
       } else {
         setMessage({ text: 'Invalid email or password', type: 'error' });
       }
