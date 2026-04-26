@@ -1,122 +1,97 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState } from 'react';
+import ProfileSettings from './components/ProfileSettings';
+import ClaimMissingMilesMember from './components/ClaimMissingMilesMember';
+import ClaimMissingMilesStaf from './components/ClaimMissingMilesStaf';
+
+const MOCK_USERS = {
+  member: { email: 'user1@mail.com', role: 'member' as const },
+  staf:   { email: 'staff1@aero.com', role: 'staf' as const },
+};
+
+type Page = 'profil' | 'klaim' | 'kelola-klaim';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [currentUserRole, setCurrentUserRole] = useState<'member' | 'staf'>('member');
+  const [currentPage, setCurrentPage] = useState<Page>('profil');
+
+  const currentUser = MOCK_USERS[currentUserRole];
+
+  const navButtonStyle = (active: boolean): React.CSSProperties => ({
+    padding: '8px 16px',
+    borderRadius: '4px',
+    border: 'none',
+    cursor: 'pointer',
+    backgroundColor: active ? 'var(--yellow-600)' : 'white',
+    color: '#111',
+    fontWeight: active ? 700 : 400,
+  });
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
+    <div>
+      {/* Navbar buat testing */}
+      <div style={{
+        backgroundColor: 'var(--primary-800)',
+        padding: '12px 20px',
+        display: 'flex',
+        gap: '8px',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+      }}>
+        <span style={{ color: 'white', fontWeight: 'bold', marginRight: 12 }}>
+          Testing Navbar
+        </span>
+
+        {/* Role switcher */}
+        <button onClick={() => { setCurrentUserRole('member'); setCurrentPage('profil'); }}
+          style={navButtonStyle(currentUserRole === 'member')}>
+          Member
         </button>
-      </section>
+        <button onClick={() => { setCurrentUserRole('staf'); setCurrentPage('profil'); }}
+          style={navButtonStyle(currentUserRole === 'staf')}>
+          Staf
+        </button>
 
-      <div className="ticks"></div>
+        <span style={{ color: 'rgba(255,255,255,0.4)', margin: '0 8px' }}>|</span>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* Page switcher */}
+        <button onClick={() => setCurrentPage('profil')}
+          style={navButtonStyle(currentPage === 'profil')}>
+          Pengaturan Profil
+        </button>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {/* Klaim hanya untuk member */}
+        {currentUserRole === 'member' && (
+          <button onClick={() => setCurrentPage('klaim')}
+            style={navButtonStyle(currentPage === 'klaim')}>
+            Klaim Missing Miles
+          </button>
+        )}
+
+        {/* Kelola klaim hanya untuk staf */}
+        {currentUserRole === 'staf' && (
+          <button onClick={() => setCurrentPage('kelola-klaim')}
+            style={navButtonStyle(currentPage === 'kelola-klaim')}>
+            Kelola Klaim
+          </button>
+        )}
+
+        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginLeft: 'auto' }}>
+          Login: <strong style={{ color: 'white' }}>{currentUser.email}</strong>
+        </span>
+      </div>
+
+      {/* ── Render Page ── */}
+      {currentPage === 'profil' && (
+        <ProfileSettings role={currentUser.role} />
+      )}
+      {currentPage === 'klaim' && currentUser.role === 'member' && (
+        <ClaimMissingMilesMember emailMember={currentUser.email} />
+      )}
+      {currentPage === 'kelola-klaim' && currentUser.role === 'staf' && (
+        <ClaimMissingMilesStaf emailStaf={currentUser.email} />
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
