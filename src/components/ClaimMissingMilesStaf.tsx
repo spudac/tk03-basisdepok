@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Types
 
 type StatusKlaim = 'Menunggu' | 'Disetujui' | 'Ditolak';
 
@@ -24,7 +24,7 @@ interface ClaimMissingMilesStafProps {
   emailStaf?: string;
 }
 
-// ─── Static Reference Data ────────────────────────────────────────────────────
+// Static Reference Data
 
 const MASKAPAI_OPTIONS = [
   { kode: 'GA', nama: 'Garuda Indonesia' },
@@ -35,7 +35,7 @@ const MASKAPAI_OPTIONS = [
   { kode: 'MH', nama: 'Malaysia Airlines' },
 ];
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// Mock Data
 
 const MOCK_KLAIM: Klaim[] = [
   {
@@ -76,7 +76,7 @@ const MOCK_KLAIM: Klaim[] = [
   },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 function StatusBadge({ status }: { status: StatusKlaim }) {
   const styles: Record<StatusKlaim, React.CSSProperties> = {
@@ -98,7 +98,7 @@ function StatusBadge({ status }: { status: StatusKlaim }) {
   );
 }
 
-// ─── Modal Setujui ────────────────────────────────────────────────────────────
+// Modal Setujui
 
 function SetujuiModal({
   klaim,
@@ -136,7 +136,7 @@ function SetujuiModal({
   );
 }
 
-// ─── Modal Tolak ─────────────────────────────────────────────────────────────
+// Modal Tolak
 
 function TolakModal({
   klaim,
@@ -178,7 +178,7 @@ function TolakModal({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// Main Component
 
 type FilterStatus = 'Semua Status' | StatusKlaim;
 type FilterMaskapai = 'Semua Maskapai' | string;
@@ -195,7 +195,7 @@ export default function ClaimMissingMilesStaf({
   const [setujuiTarget, setSetujuiTarget] = useState<Klaim | null>(null);
   const [tolakTarget, setTolakTarget] = useState<Klaim | null>(null);
 
-  // ── Filter logic ──
+  // Filter logic
   const filtered = klaims.filter(k => {
     if (filterStatus !== 'Semua Status' && k.status_penerimaan !== filterStatus) return false;
     if (filterMaskapai !== 'Semua Maskapai' && k.maskapai !== filterMaskapai) return false;
@@ -204,7 +204,7 @@ export default function ClaimMissingMilesStaf({
     return true;
   });
 
-  // ── Handlers ──
+  // Handlers
   const handleSetujui = () => {
     if (!setujuiTarget) return;
     setKlaims(prev => prev.map(k =>
@@ -230,12 +230,12 @@ export default function ClaimMissingMilesStaf({
   return (
     <div className="page-container" style={{ maxWidth: 1100, textAlign: 'left' }}>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <h1 className="page-title" style={{ fontSize: 26, fontWeight: 800, marginBottom: 20 }}>
         Kelola Klaim Missing Miles
       </h1>
 
-      {/* ── Filter Bar ── */}
+      {/* Filter Bar */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
 
         {/* Filter Status */}
@@ -291,7 +291,7 @@ export default function ClaimMissingMilesStaf({
         </div>
       </div>
 
-      {/* ── Tabel ── */}
+      {/* Tabel */}
       <div style={{ background: 'var(--white-50)', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
@@ -317,7 +317,7 @@ export default function ClaimMissingMilesStaf({
                   >
                     <td style={tdStyle}><strong>{k.nomor_klaim}</strong></td>
 
-                    {/* Member: nama + email kecil di bawah */}
+                    {/* Member: nama + email*/}
                     <td style={tdStyle}>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>{k.nama_member}</div>
                       <div style={{ fontSize: 12, color: 'var(--white-800)' }}>{k.email_member}</div>
@@ -335,7 +335,7 @@ export default function ClaimMissingMilesStaf({
                     <td style={tdStyle}>{k.timestamp}</td>
                     <td style={tdStyle}><StatusBadge status={k.status_penerimaan} /></td>
 
-                    {/* Aksi: hanya untuk Menunggu */}
+                    {/* hanya untuk Menunggu */}
                     <td style={tdStyle}>
                       {k.status_penerimaan === 'Menunggu' ? (
                         <div style={{ display: 'flex', gap: 8 }}>
@@ -368,7 +368,7 @@ export default function ClaimMissingMilesStaf({
         </div>
       </div>
 
-      {/* ── Modals ── */}
+      {/* Modals */}
       {setujuiTarget && (
         <SetujuiModal
           klaim={setujuiTarget}
@@ -387,7 +387,7 @@ export default function ClaimMissingMilesStaf({
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// Styles
 
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',

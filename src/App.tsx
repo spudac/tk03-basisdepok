@@ -2,13 +2,14 @@ import { useState } from 'react';
 import ProfileSettings from './components/ProfileSettings';
 import ClaimMissingMilesMember from './components/ClaimMissingMilesMember';
 import ClaimMissingMilesStaf from './components/ClaimMissingMilesStaf';
+import TransferMiles from './components/TransferMiles';
 
 const MOCK_USERS = {
   member: { email: 'user1@mail.com', role: 'member' as const },
   staf:   { email: 'staff1@aero.com', role: 'staf' as const },
 };
 
-type Page = 'profil' | 'klaim' | 'kelola-klaim';
+type Page = 'profil' | 'klaim' | 'kelola-klaim' | 'transfer';
 
 function App() {
   const [currentUserRole, setCurrentUserRole] = useState<'member' | 'staf'>('member');
@@ -67,6 +68,14 @@ function App() {
           </button>
         )}
 
+        {/* Transfer Miles hanya untuk member */}
+        {currentUserRole === 'member' && (
+          <button onClick={() => setCurrentPage('transfer')}
+            style={navButtonStyle(currentPage === 'transfer')}>
+            Transfer Miles
+          </button>
+        )}
+
         {/* Kelola klaim hanya untuk staf */}
         {currentUserRole === 'staf' && (
           <button onClick={() => setCurrentPage('kelola-klaim')}
@@ -86,6 +95,9 @@ function App() {
       )}
       {currentPage === 'klaim' && currentUser.role === 'member' && (
         <ClaimMissingMilesMember emailMember={currentUser.email} />
+      )}
+      {currentPage === 'transfer' && currentUser.role === 'member' && (
+        <TransferMiles emailMember={currentUser.email} awardMilesAwal={32000} />
       )}
       {currentPage === 'kelola-klaim' && currentUser.role === 'staf' && (
         <ClaimMissingMilesStaf emailStaf={currentUser.email} />
