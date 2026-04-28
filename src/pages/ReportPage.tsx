@@ -1,5 +1,4 @@
-// src/pages/ReportPage.tsx
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   MOCK_TOP_MEMBERS_MILES, 
   MOCK_ALL_TRANSACTIONS as INITIAL_TRANSACTIONS 
@@ -7,43 +6,48 @@ import {
 import './ReportPage.css';
 
 type ViewMode = 'transaksi' | 'topMember';
+type FilterType = 'Semua Tipe' | 'Transfer' | 'Redeem' | 'Package' | 'Klaim';
 
 export default function ReportPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('transaksi');
+  const [filterType, setFilterType] = useState<FilterType>('Semua Tipe');
   const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
   
-  // State untuk notifikasi
+  // State untuk Notifikasi & Modal Popup
   const [toast, setToast] = useState({ visible: false, message: '' });
-  
-  // === STATE & FUNGSI UNTUK POPUP MODAL ===
-  const [isModalOpen, setIsModalOpen] = useState(false); // Default-nya false (tertutup)
-  const [trxToDelete, setTrxToDelete] = useState<string | null>(null); // Menyimpan ID yang dipilih
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [trxToDelete, setTrxToDelete] = useState<string | null>(null);
 
-  // Fungsi untuk menghapus riwayat transaksi
+  // Fungsi Hapus & Popup
   const handleDeleteClick = (id: string, isDeletable: boolean) => {
     if (!isDeletable) return;
-    setTrxToDelete(id);      // Simpan ID yang mau dihapus
-    setIsModalOpen(true);    // Ubah state jadi true (Tampilkan popup)
+    setTrxToDelete(id);
+    setIsModalOpen(true);
   };
 
   const cancelDelete = () => {
-    setIsModalOpen(false);   // Tutup popup
-    setTrxToDelete(null);    // Kosongkan ingatan ID
+    setIsModalOpen(false);
+    setTrxToDelete(null);
   };
 
   const confirmDelete = () => {
     if (trxToDelete) {
-      setTransactions(transactions.filter(t => t.id !== trxToDelete)); // Eksekusi hapus data
-      setIsModalOpen(false); // Tutup popup
+      setTransactions(transactions.filter(t => t.id !== trxToDelete));
+      setIsModalOpen(false);
       setTrxToDelete(null);
-      // ... (kode memunculkan notifikasi toast di bawahnya) ...
+      setToast({ visible: true, message: 'Berhasil menghapus riwayat transaksi!' });
+      setTimeout(() => setToast({ visible: false, message: '' }), 3000);
     }
   };
 
-  // Logika: Jika miles positif (hijau), maka tidak bisa dihapus (abu-abu)
   const checkDeletable = (miles: number) => {
     return miles <= 0; 
   };
+
+  // Filter Data Tabel
+  const displayedTransactions = transactions.filter(trx => 
+    filterType === 'Semua Tipe' ? true : trx.tipe === filterType
+  );
 
   return (
     <div className="report-container">
@@ -57,6 +61,22 @@ export default function ReportPage() {
             <span className="toast-message">{toast.message}</span>
           </div>
           <div className="toast-progress"></div>
+        </div>
+      )}
+
+      {/* POPUP MODAL KONFIRMASI HAPUS */}
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-box">
+            <h2>Konfirmasi Hapus</h2>
+            <div className="confirmation-detail">
+              <p>Apakah Anda yakin ingin menghapus riwayat transaksi ini?</p>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-batal" onClick={cancelDelete}>Batal</button>
+              <button className="btn-confirm-delete" onClick={confirmDelete}>Hapus</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -98,24 +118,40 @@ export default function ReportPage() {
         </div>
       </div>
 
-      {/* 2. CARD UTAMA DENGAN AKSI HAPUS (CARD BAWAH) */}
-      <div className="main-report-card">
-        <div className="card-header-flex">
-          <h3 className="card-title">
-            {viewMode === 'transaksi' ? 'Riwayat Transaksi Terkini' : 'Daftar Top Member'}
-          </h3>
-          <div className="filter-group">
-            <select 
-              value={viewMode} 
-              onChange={(e) => setViewMode(e.target.value as ViewMode)}
-              className="filter-select"
-            >
-              <option value="transaksi">Riwayat Transaksi</option>
-              <option value="topMember">Top Member (Miles)</option>
-            </select>
-          </div>
+      {/* KONTROL TAB & FILTER (BERADA DI LUAR KOTAK TABEL) */}
+      <div className="table-controls-container">
+        <div className="segmented-control">
+          <button 
+            className={`seg-btn ${viewMode === 'transaksi' ? 'active' : ''}`}
+            onClick={() => setViewMode('transaksi')}
+          >
+            Riwayat Transaksi
+          </button>
+          <button 
+            className={`seg-btn ${viewMode === 'topMember' ? 'active' : ''}`}
+            onClick={() => setViewMode('topMember')}
+          >
+            Top Member
+          </button>
         </div>
 
+        {viewMode === 'transaksi' && (
+          <select 
+            value={filterType} 
+            onChange={(e) => setFilterType(e.target.value as FilterType)}
+            className="filter-dropdown-select"
+          >
+            <option value="Semua Tipe">Semua Tipe</option>
+            <option value="Transfer">Transfer</option>
+            <option value="Redeem">Redeem</option>
+            <option value="Package">Package</option>
+            <option value="Klaim">Klaim</option>
+          </select>
+        )}
+      </div>
+
+      {/* 2. CARD UTAMA (MURNI HANYA TABEL) */}
+      <div className="main-report-card">
         <table className="report-table">
           {viewMode === 'transaksi' ? (
             <>
@@ -129,7 +165,7 @@ export default function ReportPage() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((trx) => {
+                {displayedTransactions.map((trx) => {
                   const isDeletable = checkDeletable(trx.miles);
                   return (
                     <tr key={trx.id}>
@@ -145,7 +181,7 @@ export default function ReportPage() {
                       <td>
                         <div className="member-stack">
                           <span className="member-name">{trx.nama_member}</span>
-                          <span className="member-email">{trx.nama_member.toLowerCase().replace(/\s/g, '')}@mail.com</span>
+                          <span className="member-email">{trx.nama_member.toLowerCase().replace(/\s/g, '')}@example.com</span>
                         </div>
                       </td>
                       <td className={trx.miles < 0 ? 'text-danger' : 'text-success'}>
@@ -170,7 +206,7 @@ export default function ReportPage() {
             <>
               <thead>
                 <tr>
-                  <th style={{ width: '80px' }}>Peringkat</th>
+                  <th style={{ width: '40px' }}>No</th>
                   <th>Nama Member</th>
                   <th>Total Miles</th>
                   <th>Transaksi</th>
@@ -179,17 +215,15 @@ export default function ReportPage() {
               <tbody>
                 {MOCK_TOP_MEMBERS_MILES.map((m, index) => (
                   <tr key={index}>
-                    {/* Urutan Peringkat */}
                     <td className="text-muted font-bold">{index + 1}</td>
                     <td>
                       <div className="member-stack">
                         <span className="member-name">{m.nama}</span>
-                        <span className="member-email">{m.nama.toLowerCase().replace(/\s/g, '')}@mail.com</span>
+                        <span className="member-email">{m.nama.toLowerCase().replace(/\s/g, '')}@example.com</span>
                       </div>
                     </td>
                     <td className="font-bold">{m.total_miles.toLocaleString()}</td>
-                    {/* Transaksi tanpa kata "kali" */}
-                    <td className="text-black font-bold">{m.jumlah_transaksi}</td>
+                    <td className="font-bold text-black">{m.jumlah_transaksi}</td>
                   </tr>
                 ))}
               </tbody>
@@ -197,24 +231,6 @@ export default function ReportPage() {
           )}
         </table>
       </div>
-
-      {/* POPUP MODAL KONFIRMASI HAPUS */}
-      {isModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-box">
-            <h2>Konfirmasi Hapus</h2>
-            <div className="confirmation-detail">
-              <p>Apakah Anda yakin ingin menghapus riwayat transaksi ini?</p>
-            </div>
-            <div className="modal-actions">
-              {/* Ini memanggil fungsi tutup */}
-              <button className="btn-batal" onClick={cancelDelete}>Batal</button>
-              {/* Ini memanggil fungsi eksekusi hapus */}
-              <button className="btn-confirm-delete" onClick={confirmDelete}>Hapus</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -45,45 +45,46 @@ export default function DashboardPage({
         <h3 className="section-title">Informasi Pribadi</h3>
         <div className="info-grid">
           <div className="info-item">
-            <span className="info-label">Nama Lengkap</span>
-            <span className="info-value">{fullName}</span>
+            <span className="info-label">Nama Lengkap:</span>
+            <span className="info-value text-black">{fullName}</span>
           </div>
           <div className="info-item">
-            <span className="info-label">Email</span>
-            <span className="info-value">{userData.email}</span>
+            <span className="info-label">Email:</span>
+            <span className="info-value text-black">{userData.email}</span>
           </div>
           <div className="info-item">
-            <span className="info-label">Telepon</span>
-            <span className="info-value">+{userData.country_code} {userData.mobile_number}</span>
+            <span className="info-label">Telepon:</span>
+            <span className="info-value text-black">+{userData.country_code} {userData.mobile_number}</span>
           </div>
           <div className="info-item">
-            <span className="info-label">Kewarganegaraan</span>
-            <span className="info-value">{userData.kewarganegaraan}</span>
+            <span className="info-label">Kewarganegaraan:</span>
+            <span className="info-value text-black">{userData.kewarganegaraan}</span>
           </div>
           <div className="info-item">
-            <span className="info-label">Tanggal Lahir</span>
-            <span className="info-value">{userData.tanggal_lahir}</span>
+            <span className="info-label">Tanggal Lahir:</span>
+            <span className="info-value text-black">{userData.tanggal_lahir}</span>
           </div>
           {!isStaf && (
             <div className="info-item">
-              <span className="info-label">Tanggal Bergabung</span>
-              <span className="info-value">{(userData as Member).tanggal_bergabung}</span>
+              <span className="info-label">Tanggal Bergabung:</span>
+              <span className="info-value text-black">{(userData as Member).tanggal_bergabung}</span>
             </div>
           )}
         </div>
       </section>
 
-      {/* CARD 2: STATISTIK DENGAN ICON (GRID DISESUAIKAN) */}
+      {/* CARD 2: STATISTIK */}
       <section className="stats-grid">
         {!isStaf ? (
           <>
+            {/* STATS MEMBER (TETAP SAMA SEPERTI SEBELUMNYA) */}
             <div className="stat-card">
               <div className="stat-icon-wrapper blue-bg">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
               </div>
               <div className="stat-info">
                 <span className="stat-label">Nomor Member</span>
-                <span className="stat-value">{(userData as Member).nomor_member}</span>
+                <span className="stat-value text-black">{(userData as Member).nomor_member}</span>
               </div>
             </div>
             
@@ -105,7 +106,7 @@ export default function DashboardPage({
               </div>
               <div className="stat-info">
                 <span className="stat-label">Total Miles</span>
-                <span className="stat-value">{(userData as Member).total_miles.toLocaleString()}</span>
+                <span className="stat-value text-black">{(userData as Member).total_miles.toLocaleString()}</span>
               </div>
             </div>
 
@@ -115,45 +116,67 @@ export default function DashboardPage({
               </div>
               <div className="stat-info">
                 <span className="stat-label">Award Miles</span>
-                <span className="stat-value">{(userData as Member).award_miles.toLocaleString()}</span>
+                <span className="stat-value text-black">{(userData as Member).award_miles.toLocaleString()}</span>
               </div>
             </div>
           </>
         ) : (
           <>
+            {/* STATS STAF TERBARU */}
             <div className="stat-card">
-              <div className="stat-icon-wrapper blue-bg">
-                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+              <div className="stat-icon-wrapper bg-slate">
+                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M17 8l2 2 4-4"/></svg>
               </div>
               <div className="stat-info">
                 <span className="stat-label">ID Staf</span>
-                <span className="stat-value">{(userData as Staf).id_staf}</span>
+                <span className="stat-value text-black">{(userData as Staf).id_staf}</span>
               </div>
             </div>
-            {/* Sisanya untuk staf disesuaikan polanya */}
+            
             <div className="stat-card">
+              <div className="stat-icon-wrapper light-blue-bg">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.6L3 8l6 5-3 3-3-1-2 2 5 2 2 5 2-2-1-3 3-3 5 6 1.2-.7c.4-.2.7-.6.6-1.1Z"/></svg>
+              </div>
               <div className="stat-info">
                 <span className="stat-label">Maskapai</span>
-                <span className="stat-value">{(userData as Staf).nama_maskapai}</span>
+                <span className="stat-value text-black">{(userData as Staf).nama_maskapai}</span>
               </div>
             </div>
+
             <div className="stat-card">
+              <div className="stat-icon-wrapper light-orange-bg">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
               <div className="stat-info">
                 <span className="stat-label">Klaim Menunggu</span>
-                <span className="stat-value text-warning">{stats.klaim_menunggu}</span>
+                <span className="stat-value text-black">{stats.klaim_menunggu}</span>
               </div>
             </div>
+
             <div className="stat-card">
-               <div className="stat-info">
+               <div className="stat-icon-wrapper light-green-bg">
+                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              </div>
+              <div className="stat-info">
                 <span className="stat-label">Klaim Disetujui</span>
-                <span className="stat-value text-success">{stats.klaim_disetujui}</span>
+                <span className="stat-value text-black">{stats.klaim_disetujui}</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+               <div className="stat-icon-wrapper light-red-bg">
+                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              </div>
+              <div className="stat-info">
+                <span className="stat-label">Klaim Ditolak</span>
+                <span className="stat-value text-black">{(stats as any).klaim_ditolak || 1}</span>
               </div>
             </div>
           </>
         )}
       </section>
 
-      {/* CARD 3: TRANSAKSI TERBARU (DIRENDER RATA KIRI) */}
+      {/* CARD 3: TRANSAKSI TERBARU (Hanya untuk Member) */}
       {!isStaf && (
         <section className="dashboard-section card">
           <h3 className="section-title">5 Transaksi Terbaru</h3>
