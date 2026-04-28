@@ -1,122 +1,84 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+// src/App.tsx
+import { useState } from 'react';
+import Navbar from './components/Navbar'; // Import navbar baru
+import DashboardPage from './pages/DashboardPage';
+import RedeemPage from './pages/RedeemPage'; // Import redeem page
+import type { Role } from './types';
+import PurchasePage from './pages/PurchasePage';
+import InfoTierPage from './pages/InfoTierPage';
+import ReportPage from './pages/ReportPage';
+import {
+  MOCK_MEMBER,
+  MOCK_MEMBER_SILVER,
+  MOCK_STAF,
+  MOCK_DASHBOARD_STATS,
+  MOCK_RECENT_TRANSACTIONS_MEMBER,
+} from './data/mockData';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [role, setRole] = useState<Role>('guest');
+  const [currentPage, setCurrentPage] = useState('dashboard'); // State navigasi
+  const [useSilver, setUseSilver] = useState(false);
+
+  const activeMember = useSilver ? MOCK_MEMBER_SILVER : MOCK_MEMBER;
+
+  // Fungsi untuk merender konten berdasarkan currentPage
+  const renderContent = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return (
+          <DashboardPage
+            role={role}
+            member={activeMember}
+            staf={MOCK_STAF}
+            stats={MOCK_DASHBOARD_STATS}
+            recentTransactions={MOCK_RECENT_TRANSACTIONS_MEMBER}
+          />
+        );
+      case 'redeem':
+        return <RedeemPage member={activeMember} />;
+      case 'purchase':
+        if (role !== 'member') return null; 
+        return <PurchasePage member={activeMember} />;
+      case 'tier': 
+        if (role !== 'member') return null;
+        return <InfoTierPage member={activeMember} />;
+      case 'report':
+        if (role !== 'staf') return null;
+        return <ReportPage />;
+      default:
+        return <DashboardPage role={role} member={activeMember} staf={MOCK_STAF} stats={MOCK_DASHBOARD_STATS} recentTransactions={[]} />;
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div style={{ minHeight: '100vh', background: 'var(--primary-50)' }}>
+      {/* 1. Navigasi Utama */}
+      <Navbar 
+        role={role} 
+        currentPage={currentPage} 
+        onNavigate={(page) => setCurrentPage(page)} 
+      />
 
-      <div className="ticks"></div>
+      {/* 2. Dev Switcher (Tetap ada buat bantu testing) */}
+      <div className="dev-switcher">
+        <span className="dev-switcher__label">🛠 Dev: Role</span>
+        <button onClick={() => setRole('guest')} className={role === 'guest' ? 'active' : ''}>Guest</button>
+        <button onClick={() => setRole('member')} className={role === 'member' ? 'active' : ''}>Member</button>
+        <button onClick={() => setRole('staf')} className={role === 'staf' ? 'active' : ''}>Staf</button>
+        {role === 'member' && (
+          <button onClick={() => setUseSilver(!useSilver)}>
+            {useSilver ? 'Switch to Blue' : 'Switch to Silver'}
+          </button>
+        )}
+      </div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {/* 3. Konten Halaman */}
+      <main>
+        {renderContent()}
+      </main>
+    </div>
+  );
 }
 
-export default App

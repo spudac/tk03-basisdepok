@@ -1,0 +1,154 @@
+.tier-container {
+  padding: 32px 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tier-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.tier-header h1 {
+  font-size: 28px;
+  color: var(--primary-950);
+  margin-bottom: 8px;
+}
+
+.tier-header p {
+  color: var(--white-800);
+  font-size: 15px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.tier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.tier-card {
+  background: var(--white-100);
+  border-radius: 16px;
+  border: 1px solid var(--primary-200);
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 20, 74, 0.03);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.tier-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 20, 74, 0.08);
+}
+
+.tier-card.current-tier {
+  border: 2px solid var(--primary-600);
+  box-shadow: 0 8px 24px rgba(0, 68, 255, 0.15);
+}
+
+.tier-badge-current {
+  position: absolute;
+  top: 12px;
+  right: -32px;
+  background-color: var(--primary-600);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 32px;
+  transform: rotate(45deg);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.tier-header-box {
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.tier-title {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.tier-id {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+/* Background Warna Tier */
+.bg-tier-blue {
+  background-color: var(--primary-100);
+  color: var(--primary-900);
+}
+
+.bg-tier-silver {
+  background-color: #e9ecef;
+  color: #343a40;
+}
+
+.bg-tier-gold {
+  background-color: var(--yellow-200);
+  color: var(--yellow-900);
+}
+
+.bg-tier-platinum {
+  background-color: var(--primary-950);
+  color: var(--white-100);
+}
+
+.tier-requirements, .tier-benefits {
+  padding: 20px 24px;
+}
+
+.tier-requirements {
+  border-bottom: 1px solid var(--primary-100);
+  background-color: var(--primary-50);
+}
+
+.req-title {
+  font-size: 14px;
+  color: var(--primary-900);
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.req-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.req-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.req-label {
+  color: var(--white-800);
+}
+
+.req-value {
+  font-weight: 700;
+  color: var(--primary-950);
+}
+
+.benefit-list {
+  padding-left: 20px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--white-900);
+  line-height: 1.6;
+}
