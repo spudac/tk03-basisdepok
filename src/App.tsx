@@ -9,7 +9,6 @@ import InfoTierPage from './pages/InfoTierPage';
 import ReportPage from './pages/ReportPage';
 import {
   MOCK_MEMBER,
-  MOCK_MEMBER_SILVER,
   MOCK_STAF,
   MOCK_DASHBOARD_STATS,
   MOCK_RECENT_TRANSACTIONS_MEMBER,
@@ -17,11 +16,13 @@ import {
 import './App.css';
 
 export default function App() {
-  const [role, setRole] = useState<Role>('guest');
+  // Catatan: Ubah 'member' menjadi 'staf' secara manual di sini jika kamu ingin mengecek tampilan staf.
+  // masih hardcode karena belum ada login
+  const [role, setRole] = useState<Role>('member');
   const [currentPage, setCurrentPage] = useState('dashboard'); // State navigasi
-  const [useSilver, setUseSilver] = useState(false);
 
-  const activeMember = useSilver ? MOCK_MEMBER_SILVER : MOCK_MEMBER;
+  // Set default member ke MOCK_MEMBER sementara menunggu integrasi login
+  const activeMember = MOCK_MEMBER;
 
   // Fungsi untuk merender konten berdasarkan currentPage
   const renderContent = () => {
@@ -61,24 +62,10 @@ export default function App() {
         onNavigate={(page) => setCurrentPage(page)} 
       />
 
-      {/* 2. Dev Switcher (Tetap ada buat bantu testing) */}
-      <div className="dev-switcher">
-        <span className="dev-switcher__label">🛠 Dev: Role</span>
-        <button onClick={() => setRole('guest')} className={role === 'guest' ? 'active' : ''}>Guest</button>
-        <button onClick={() => setRole('member')} className={role === 'member' ? 'active' : ''}>Member</button>
-        <button onClick={() => setRole('staf')} className={role === 'staf' ? 'active' : ''}>Staf</button>
-        {role === 'member' && (
-          <button onClick={() => setUseSilver(!useSilver)}>
-            {useSilver ? 'Switch to Blue' : 'Switch to Silver'}
-          </button>
-        )}
-      </div>
-
-      {/* 3. Konten Halaman */}
+      {/* 2. Konten Halaman */}
       <main>
         {renderContent()}
       </main>
     </div>
   );
 }
-
