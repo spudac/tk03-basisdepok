@@ -320,8 +320,7 @@ export default function TransferMiles({
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
+// Styles
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
@@ -331,16 +330,19 @@ const overlayStyle: React.CSSProperties = {
   justifyContent: 'center',
   zIndex: 1000,
   padding: 20,
+  fontFamily: "'Inter', sans-serif",
 };
 
 const modalStyle: React.CSSProperties = {
-  background: 'var(--white-50)',
-  borderRadius: 12,
-  padding: 28,
+  background: '#ffffff',
+  borderRadius: '16px',
+  padding: '28px',
   width: '100%',
   maxWidth: 420,
-  boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+  boxShadow: '0 10px 30px rgba(77,111,224,0.08)',
+  border: '1px solid #e2eaff',
   boxSizing: 'border-box',
+  fontFamily: "'Inter', sans-serif",
 };
 
 const modalHeaderStyle: React.CSSProperties = {
@@ -386,6 +388,34 @@ const errorBannerStyle: React.CSSProperties = {
   borderRadius: 8,
   padding: '10px 14px',
   fontSize: 14,
+  fontFamily: "'Inter', sans-serif",
+};
+
+const submitButtonStyle: React.CSSProperties = {
+  padding: '12px 24px',
+  borderRadius: '12px',
+  background: 'linear-gradient(135deg, #6a90f0, #4d6fe0)',
+  color: '#ffffff',
+  fontSize: '14px',
+  fontWeight: 700,
+  border: 'none',
+  cursor: 'pointer',
+  boxShadow: '0 4px 14px rgba(77,111,224,0.35)',
+  fontFamily: "'Inter', sans-serif",
+  flex: 1,
+};
+
+const cancelButtonStyle: React.CSSProperties = {
+  padding: '12px 24px',
+  borderRadius: '12px',
+  background: 'transparent',
+  color: '#4a5578',
+  fontSize: '14px',
+  fontWeight: 700,
+  border: '1.5px solid #d0d8ef',
+  cursor: 'pointer',
+  fontFamily: "'Inter', sans-serif",
+  flex: 1,
 };
 
 const thStyle: React.CSSProperties = {
@@ -401,4 +431,5 @@ const tdStyle: React.CSSProperties = {
   padding: '13px 16px',
   color: 'var(--white-900)',
   verticalAlign: 'middle',
+  fontSize: 13,
 };

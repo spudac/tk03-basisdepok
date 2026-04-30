@@ -388,7 +388,6 @@ export default function ClaimMissingMilesStaf({
 }
 
 // Styles
-
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
@@ -398,15 +397,18 @@ const overlayStyle: React.CSSProperties = {
   justifyContent: 'center',
   zIndex: 1000,
   padding: 20,
+  fontFamily: "'Inter', sans-serif",
 };
 
 const modalStyle: React.CSSProperties = {
-  background: 'var(--white-50)',
-  borderRadius: 12,
-  padding: 28,
+  background: '#ffffff',
+  borderRadius: '16px',
+  padding: '28px',
   width: '100%',
   maxWidth: 440,
-  boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+  boxShadow: '0 10px 30px rgba(77,111,224,0.08)',
+  border: '1px solid #e2eaff',
+  fontFamily: "'Inter', sans-serif",
 };
 
 const modalHeaderStyle: React.CSSProperties = {
@@ -434,14 +436,14 @@ const modalInfoStyle: React.CSSProperties = {
   color: 'var(--white-900)',
   display: 'flex',
   flexDirection: 'column',
-  gap: 4,
+  gap: 6,
   marginBottom: 24,
 };
 
 const modalFooterStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'flex-end',
-  gap: 10,
+  gap: 12,
 };
 
 const closeButtonStyle: React.CSSProperties = {
@@ -454,25 +456,40 @@ const closeButtonStyle: React.CSSProperties = {
   padding: '0 4px',
 };
 
-const cancelButtonStyle: React.CSSProperties = {
-  padding: '10px 20px',
-  border: '1px solid #d1d5db',
-  borderRadius: 8,
-  background: 'white',
-  color: 'var(--white-900)',
-  fontSize: 14,
-  fontWeight: 600,
+const approveButtonStyle: React.CSSProperties = {
+  padding: '12px 24px',
+  borderRadius: '12px',
+  background: 'linear-gradient(135deg, #6a90f0, #4d6fe0)',
+  color: '#ffffff',
+  fontSize: '14px',
+  fontWeight: 700,
+  border: 'none',
   cursor: 'pointer',
+  boxShadow: '0 4px 14px rgba(77,111,224,0.35)',
+  fontFamily: "'Inter', sans-serif",
+};
+
+const cancelButtonStyle: React.CSSProperties = {
+  padding: '12px 24px',
+  borderRadius: '12px',
+  background: 'transparent',
+  color: '#4a5578',
+  fontSize: '14px',
+  fontWeight: 700,
+  border: '1.5px solid #d0d8ef',
+  cursor: 'pointer',
+  fontFamily: "'Inter', sans-serif",
 };
 
 const filterSelectStyle: React.CSSProperties = {
-  padding: '8px 12px',
+  padding: '10px 14px',
   border: '1px solid #e0e0e0',
-  borderRadius: 8,
+  borderRadius: '8px',
   fontSize: 13,
   color: 'var(--white-900)',
   background: 'white',
   cursor: 'pointer',
+  fontFamily: "'Inter', sans-serif",
 };
 
 const thStyle: React.CSSProperties = {
@@ -488,13 +505,14 @@ const tdStyle: React.CSSProperties = {
   padding: '13px 16px',
   color: 'var(--white-900)',
   verticalAlign: 'middle',
+  fontSize: 13,
 };
 
 const actionButtonStyle = (color: string): React.CSSProperties => ({
-  width: 30,
-  height: 30,
-  borderRadius: '50%',
-  border: `2px solid ${color}`,
+  width: 32,
+  height: 32,
+  borderRadius: '8px',
+  border: `1.5px solid ${color}`,
   background: 'white',
   color: color,
   fontWeight: 700,
@@ -504,4 +522,5 @@ const actionButtonStyle = (color: string): React.CSSProperties => ({
   alignItems: 'center',
   justifyContent: 'center',
   lineHeight: 1,
+  transition: 'all 0.2s',
 });

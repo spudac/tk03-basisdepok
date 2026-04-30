@@ -1,0 +1,49 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: linear-gradient(90deg, #9ab5ff 0%, #e2eaff 50%, #f6f5ea 100%);
+}
+
+.navbar-logo {
+  height: 36px;
+  display: block;
+}
+
+.navbar-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-login, .btn-register {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 9999px;
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+  background-color: #8fa6d6;
+  color: #000000;
+}
+
+.btn-login:hover, .btn-register:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.btn-login:active, .btn-register:active {
+  transform: scale(0.98);
+}
+
+.login-icon {
+  height: 18px;
+  width: auto;
+}

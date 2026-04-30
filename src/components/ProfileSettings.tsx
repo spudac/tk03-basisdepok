@@ -428,7 +428,6 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
 }
 
 // Inline Styles
-
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
@@ -438,15 +437,18 @@ const overlayStyle: React.CSSProperties = {
   justifyContent: 'center',
   zIndex: 1000,
   padding: '20px',
+  fontFamily: "'Inter', sans-serif",
 };
 
 const modalStyle: React.CSSProperties = {
-  background: 'var(--white-50)',
-  borderRadius: 12,
+  background: '#ffffff',
+  borderRadius: '16px',
   padding: '32px',
   width: '100%',
   maxWidth: 480,
-  boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+  boxShadow: '0 10px 30px rgba(77,111,224,0.08)',
+  border: '1px solid #e2eaff',
+  fontFamily: "'Inter', sans-serif",
 };
 
 const modalHeaderStyle: React.CSSProperties = {
@@ -473,6 +475,7 @@ const errorBannerStyle: React.CSSProperties = {
   borderRadius: 8,
   padding: '10px 14px',
   fontSize: 14,
+  fontFamily: "'Inter', sans-serif",
 };
 
 const successBannerStyle: React.CSSProperties = {
@@ -482,16 +485,34 @@ const successBannerStyle: React.CSSProperties = {
   borderRadius: 8,
   padding: '10px 14px',
   fontSize: 14,
+  fontFamily: "'Inter', sans-serif",
 };
 
 const ubahPasswordButtonStyle: React.CSSProperties = {
-  padding: '10px 20px',
-  border: '1px solid #d0d0d0',
-  borderRadius: 8,
-  background: 'var(--white-50)',
-  color: 'var(--white-900)',
-  fontSize: 14,
-  fontWeight: 600,
+  padding: '12px 24px',
+  borderRadius: '12px',
+  background: 'transparent',
+  color: '#4a5578',
+  fontSize: '14px',
+  fontWeight: 700,
+  border: '1.5px solid #d0d8ef',
   cursor: 'pointer',
-  transition: 'border-color 0.2s, box-shadow 0.2s',
+  fontFamily: "'Inter', sans-serif",
+  transition: 'all 0.2s',
+};
+
+const saveButtonStyle: React.CSSProperties = {
+  padding: '12px 24px',
+  borderRadius: '12px',
+  background: 'linear-gradient(135deg, #6a90f0, #4d6fe0)',
+  color: '#ffffff',
+  fontSize: '14px',
+  fontWeight: 700,
+  border: 'none',
+  cursor: 'pointer',
+  boxShadow: '0 4px 14px rgba(77,111,224,0.35)',
+  fontFamily: "'Inter', sans-serif",
+  transition: 'opacity 0.2s',
+  width: '100%',
+  marginTop: '12px',
 };
