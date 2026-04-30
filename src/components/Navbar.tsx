@@ -1,80 +1,30 @@
-// src/components/Navbar.tsx
-import type { Role } from '../types';
+import { useNavigate } from 'react-router-dom';
+import aeroMilesLogo from '../assets/AeroMiles Logo.svg';
+import loginIcon from '../assets/Login.svg';
 import './Navbar.css';
 
-interface NavbarProps {
-  role: Role;
-  currentPage: string;
-  onNavigate: (page: string) => void;
-}
+const Navbar = () => {
+  const navigate = useNavigate();
 
-export default function Navbar({ role, currentPage, onNavigate }: NavbarProps) {
   return (
     <nav className="navbar">
-      <div className="navbar-container">
-        <div className="navbar-logo" onClick={() => onNavigate('dashboard')}>
-          ✈ AeroMiles
-        </div>
-
-        <ul className="navbar-menu">
-          {/* Menu untuk SEMUA (termasuk Guest) */}
-          <li 
-            className={currentPage === 'dashboard' ? 'active' : ''} 
-            onClick={() => onNavigate('dashboard')}
-          >
-            Dashboard
-          </li>
-
-          {/* Menu Khusus MEMBER */}
-          {role === 'member' && (
-            <>
-              <li 
-                className={currentPage === 'redeem' ? 'active' : ''} 
-                onClick={() => onNavigate('redeem')}
-              >
-                Redeem Hadiah
-              </li>
-              <li 
-                className={currentPage === 'purchase' ? 'active' : ''} 
-                onClick={() => onNavigate('purchase')}
-              >
-                Beli Miles
-              </li>
-              <li 
-                className={currentPage === 'tier' ? 'active' : ''} 
-                onClick={() => onNavigate('tier')}
-              >
-                Info Tier
-              </li>
-              <li>Transfer</li>
-            </>
-          )}
-
-          {/* Menu Khusus STAF */}
-          {role === 'staf' && (
-            <>
-                <li>Kelola Member</li>
-                <li 
-                className={currentPage === 'report' ? 'active' : ''} 
-                onClick={() => onNavigate('report')}
-                >
-                Laporan & Riwayat
-                </li>
-            </>
-            )}
-        </ul>
-
-        <div className="navbar-auth">
-          {role === 'guest' ? (
-            <button className="btn-login">Login</button>
-          ) : (
-            <div className="user-profile">
-              <span>{role === 'staf' ? 'Staf Aero' : 'Member'}</span>
-              <button className="btn-logout">Logout</button>
-            </div>
-          )}
-        </div>
+      <div 
+        className="navbar-brand" 
+        onClick={() => navigate('/')} 
+        style={{ cursor: 'pointer' }}
+      >
+        <img src={aeroMilesLogo} alt="AeroMiles Logo" className="navbar-logo" />
+      </div>
+      <div className="navbar-actions">
+        <button className="btn-login" onClick={() => navigate('/login')}>
+          Log in <img src={loginIcon} alt="Login" className="login-icon" />
+        </button>
+        <button className="btn-register" onClick={() => navigate('/register')}>
+          Register
+        </button>
       </div>
     </nav>
   );
-}
+};
+
+export default Navbar;

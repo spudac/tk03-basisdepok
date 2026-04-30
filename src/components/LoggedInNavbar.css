@@ -1,0 +1,138 @@
+.user-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  padding: 0 2rem;
+  background: linear-gradient(90deg, #9ab5ff 0%, #dce5ff 40%, #f6f5ea 100%);
+  height: 80px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.user-navbar-brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.user-navbar-logo {
+  height: 28px;
+  display: block;
+}
+
+.user-welcome {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1c1c1c;
+}
+
+.user-navbar-menu {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c2c2c;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.nav-item img {
+  height: 18px;
+  width: auto;
+}
+
+.nav-item-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  padding: 0 24px;
+  color: #0b57d0;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-bottom: 3px solid #0b57d0;
+}
+
+.nav-item-active svg {
+  width: 24px;
+  height: 24px;
+  stroke: #0b57d0;
+}
+
+.nav-item-settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.nav-item-settings:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.nav-item-settings img {
+  height: 24px;
+  width: auto;
+}
+
+.nav-item-logout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: #d32f2f;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  margin-left: 16px;
+}
+
+.nav-item-logout:hover {
+  background-color: rgba(211, 47, 47, 0.1);
+}
+
+.nav-item-logout img {
+  height: 18px;
+  width: auto;
+}
+
+/* Adjustments for smaller screens if needed */
+@media (max-width: 1200px) {
+  .user-navbar-menu {
+    gap: 8px;
+  }
+  .nav-item {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+}
