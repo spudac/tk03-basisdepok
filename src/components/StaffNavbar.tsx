@@ -35,7 +35,7 @@ const StaffNavbar: React.FC<StaffNavbarProps> = ({ userName = '[Name]' }) => {
           <span>Dashboard</span>
         </div>
         
-        <div className="nav-item" onClick={() => navigate('/staff/members')}>
+        <div className="nav-item" onClick={() => navigate('/staff/manajemen-member')}>
           <img src={profileIcon} alt="Kelola Member" />
           <span>Kelola Member</span>
         </div>

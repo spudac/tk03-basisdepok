@@ -17,6 +17,8 @@ import {
   MOCK_RECENT_TRANSACTIONS_MEMBER,
 } from './data/mockData';
 import './App.css';
+import IdentitasPage from './pages/IdentitasPage';
+import ManageMembersPage from './pages/ManageMembersPage';
 
 // --- Imports untuk Auth ---
 import Login from './features/auth/Auth.tsx';
@@ -100,6 +102,7 @@ function AppContent() {
       path === '/buy-package' || 
       path === '/tier-info' || 
       path === '/dashboard' ||
+      path === '/member/Identitas' ||
       path === '/'
     ) {
       setRole('member');
@@ -135,12 +138,14 @@ function AppContent() {
         <Route path="/staff/dashboard" element={<DashboardPage role={role} member={MOCK_MEMBER} staf={MOCK_STAF} stats={MOCK_DASHBOARD_STATS} recentTransactions={[]} />} />
         <Route path="/staff/kelola-hadiah" element={<KelolaHadiah />}></Route>
         <Route path="/staff/kelola-mitra" element={<KelolaMitra />}></Route>
+        <Route path="/staff/manajemen-member" element={<ManageMembersPage />} />
         
         {/* Rute Member */}
         <Route path="/redeem" element={<RedeemPage member={MOCK_MEMBER} />} />
         <Route path="/buy-package" element={<PurchasePage member={MOCK_MEMBER} />} />
         <Route path="/tier-info" element={<InfoTierPage member={MOCK_MEMBER} />} />
         <Route path="/dashboard" element={<DashboardPage role={role} member={MOCK_MEMBER} staf={MOCK_STAF} stats={MOCK_DASHBOARD_STATS} recentTransactions={[]} />} />
+        <Route path="/member/Identitas" element={<IdentitasPage member={MOCK_MEMBER} />} />
 
         {/* Redirect unknown routes ke login */}
         <Route path="*" element={<Navigate to="/login" replace />} />

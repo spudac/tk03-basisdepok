@@ -36,7 +36,7 @@ const LoggedInNavbar: React.FC<LoggedInNavbarProps> = ({ userName = '[Name]' }) 
           <span>Dashboard</span>
         </div>
         
-        <div className="nav-item" onClick={() => navigate('/profile')}>
+        <div className="nav-item" onClick={() => navigate('/member/Identitas')}>
           <img src={profileIcon} alt="Profile" />
           <span>Identitas Saya</span>
         </div>
