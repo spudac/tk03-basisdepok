@@ -24,12 +24,11 @@ import KelolaHadiah from './features/ManageGifts/ManageGifts.tsx';
 import KelolaMitra from './features/ManagePartners/ManagePartners.tsx';
 import LoggedInNavbar from './components/LoggedInNavbar.tsx';
 import StaffNavbar from './components/StaffNavbar.tsx';
-import ProfileSettings from './components/ProfileSettings';
-import ClaimMissingMilesMember from './components/ClaimMissingMilesMember';
-import TransferMiles from './components/TransferMiles';
-import ClaimMissingMilesStaf from './components/ClaimMissingMilesStaf';
+import ProfileSettings from './pages/ProfileSettings.tsx';
+import ClaimMissingMilesMember from './pages/ClaimMissingMilesMember.tsx';
+import TransferMiles from './pages/TransferMiles.tsx';
+import ClaimMissingMilesStaf from './pages/ClaimMissingMilesStaf.tsx';
 
-// Komponen PageContainer yang SUDAH DIPERBAIKI (Hanya Background saja)
 function PageContainer({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ 
@@ -118,33 +117,27 @@ function AppContent() {
       {renderNavbar()}
 
       <Routes>
-        {/* Rute Auth (Tanpa Background Gradient) */}
+        {/* Rute Auth */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
         {/* Rute MainApp */}
         <Route path="/" element={<MainApp role={role} />} />
 
-        {/* --- Rute Staf --- */}
+        {/* Rute Staf */}
         <Route path="/staff/transactions" element={<PageContainer><ReportPage /></PageContainer>} />
         <Route path="/staff/dashboard" element={<PageContainer><DashboardPage role={role} member={MOCK_MEMBER} staf={MOCK_STAF} stats={MOCK_DASHBOARD_STATS} recentTransactions={[]} /></PageContainer>} />
-        
-        {/* Rute Baru dari Temanmu */}
         <Route path="/staff/kelola-hadiah" element={<PageContainer><KelolaHadiah /></PageContainer>} />
         <Route path="/staff/kelola-mitra" element={<PageContainer><KelolaMitra /></PageContainer>} />
         <Route path="/staff/manajemen-member" element={<PageContainer><ManageMembersPage /></PageContainer>} />
-        
-        {/* Rute Staf (Fitur Kamu) */}
         <Route path="/staff/settings" element={<PageContainer><ProfileSettings role="staf" email="staff@aero.com" /></PageContainer>} />
         <Route path="/staff/claims" element={<PageContainer><ClaimMissingMilesStaf /></PageContainer>} />
         
-        {/* --- Rute Member --- */}
+        {/* Rute Member */}
         <Route path="/redeem" element={<PageContainer><RedeemPage member={MOCK_MEMBER} /></PageContainer>} />
         <Route path="/buy-package" element={<PageContainer><PurchasePage member={MOCK_MEMBER} /></PageContainer>} />
         <Route path="/tier-info" element={<PageContainer><InfoTierPage member={MOCK_MEMBER} /></PageContainer>} />
         <Route path="/dashboard" element={<PageContainer><DashboardPage role={role} member={MOCK_MEMBER} staf={MOCK_STAF} stats={MOCK_DASHBOARD_STATS} recentTransactions={[]} /></PageContainer>} />
-
-        {/* Rute Member (Fitur Kamu) */}
         <Route path="/settings" element={<PageContainer><ProfileSettings role="member" email="user@mail.com" /></PageContainer>} />
         <Route path="/claim-miles" element={<PageContainer><ClaimMissingMilesMember /></PageContainer>} />
         <Route path="/transfer-miles" element={<PageContainer><TransferMiles /></PageContainer>} />

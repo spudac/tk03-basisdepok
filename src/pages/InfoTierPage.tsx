@@ -37,7 +37,7 @@ export default function TierInfoPage({ member }: TierInfoPageProps) {
           <div className="current-tier-progress">
             <h3 className="progress-heading">Progres menuju {nextTier.nama}</h3>
             
-            {/* HANYA PROGRESS MILES (Penerbangan dihapus) */}
+            {/* PROGRESS MILES */}
             <div className="progress-group">
               <div className="progress-labels">
                 <span className="progress-text-black">

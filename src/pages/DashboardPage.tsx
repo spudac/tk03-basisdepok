@@ -77,7 +77,7 @@ export default function DashboardPage({
       <section className="stats-grid">
         {!isStaf ? (
           <>
-            {/* STATS MEMBER (TETAP SAMA SEPERTI SEBELUMNYA) */}
+            {/* STATS MEMBER */}
             <div className="stat-card">
               <div className="stat-icon-wrapper blue-bg">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
@@ -122,7 +122,6 @@ export default function DashboardPage({
           </>
         ) : (
           <>
-            {/* STATS STAF TERBARU */}
             <div className="stat-card">
               <div className="stat-icon-wrapper bg-slate">
                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M17 8l2 2 4-4"/></svg>
@@ -176,7 +175,7 @@ export default function DashboardPage({
         )}
       </section>
 
-      {/* CARD 3: TRANSAKSI TERBARU (Hanya untuk Member) */}
+      {/* CARD 3: TRANSAKSI (Hanya untuk Member) */}
       {!isStaf && (
         <section className="dashboard-section card">
           <h3 className="section-title">5 Transaksi Terbaru</h3>

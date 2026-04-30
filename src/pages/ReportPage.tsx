@@ -118,7 +118,7 @@ export default function ReportPage() {
         </div>
       </div>
 
-      {/* KONTROL TAB & FILTER (BERADA DI LUAR KOTAK TABEL) */}
+      {/* KONTROL TAB & FILTER */}
       <div className="table-controls-container">
         <div className="segmented-control">
           <button 
@@ -150,7 +150,7 @@ export default function ReportPage() {
         )}
       </div>
 
-      {/* 2. CARD UTAMA (MURNI HANYA TABEL) */}
+      {/* 2. CARD UTAMA */}
       <div className="main-report-card">
         <table className="report-table">
           {viewMode === 'transaksi' ? (
