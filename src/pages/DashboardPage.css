@@ -1,0 +1,162 @@
+/* src/pages/DashboardPage.css */
+
+.dashboard-container {
+  padding: 32px 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.guest-view {
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+}
+
+.guest-card {
+  background: var(--white-100);
+  padding: 48px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 20, 74, 0.05);
+  text-align: center;
+}
+
+.dashboard-header h1 {
+  font-size: 24px;
+  color: var(--primary-950);
+  margin-bottom: 4px;
+  font-weight: 700; /* Diubah dari 800 ke 700 */
+}
+
+.dashboard-header p {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+}
+
+.section-title {
+  font-size: 16px;
+  color: #000000;
+  margin-bottom: 20px;
+  font-weight: 700; /* Diubah dari 800 ke 700 */
+}
+
+/* Info Grid (Format 3 Kolom) */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 14px;
+  font-weight: 600; /* Diubah dari 700 ke 600 agar tidak terlalu tebal */
+}
+
+/* Memastikan teks nilai hitam pekat */
+.text-black {
+  color: #000000 !important;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+}
+
+/* Icon Wrappers */
+.stat-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+/* Warna-warni Icon */
+.bg-slate { background-color: #f1f5f9; color: #64748b; }
+.blue-bg { background-color: var(--primary-100); color: var(--primary-700); }
+.yellow-bg { background-color: var(--yellow-100); color: var(--yellow-800); }
+.light-blue-bg { background-color: #e0f2fe; color: #0284c7; }
+.green-bg { background-color: #dcfce7; color: #166534; }
+.light-orange-bg { background-color: #ffedd5; color: #ea580c; }
+.light-green-bg { background-color: #dcfce7; color: #16a34a; }
+.light-red-bg { background-color: #fee2e2; color: #dc2626; }
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700; /* Diubah dari 800 ke 700 */
+}
+
+/* Tier Badges (Untuk Member) */
+.tier-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600; /* Diubah dari 700 ke 600 */
+  width: fit-content;
+}
+
+.tier-blue { background: var(--primary-100); color: var(--primary-700); }
+.tier-silver { background: #f1f3f5; color: #495057; }
+.tier-gold { background: var(--yellow-100); color: var(--yellow-800); }
+.tier-platinum { background: var(--primary-950); color: var(--white-100); }
+
+/* Transactions List */
+.transaction-list { display: flex; flex-direction: column; }
+.transaction-item { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #e2e8f0; }
+.transaction-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+.trx-left-group { display: flex; align-items: center; gap: 16px; }
+.trx-badge { background-color: #f8f9fa; border: 1px solid #e9ecef; color: #000000; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; min-width: 85px; text-align: center; text-transform: uppercase; }
+.trx-date { color: #64748b; font-size: 14px; }
+.trx-miles { font-weight: 700; font-size: 14px; } /* Diubah dari 800 ke 700 */
+.trx-miles.positive { color: #16a34a; }
+.trx-miles.negative { color: #dc2626; }

@@ -1,0 +1,197 @@
+/* src/pages/RedeemPage.css */
+
+.redeem-container {
+  padding: 32px 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.redeem-header {
+  margin-bottom: 24px;
+}
+
+.redeem-header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #000000;
+  margin-bottom: 8px;
+}
+
+.award-miles-info {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.award-miles-info strong {
+  color: #000000;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+/* Tabs */
+.redeem-tabs-wrapper {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.redeem-tab {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.redeem-tab.active {
+  background-color: #f1f5f9;
+  color: #000000;
+}
+
+/* KATALOG GRID */
+.reward-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+/* CARD HADIAH */
+.reward-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.reward-badge {
+  background-color: #1e3a8a; /* Biru gelap */
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  width: fit-content;
+  margin-bottom: 16px; /* Jarak badge ke judul dirapatkan */
+}
+
+.reward-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #000000; /* Hitam pekat */
+  margin: 0 0 6px 0; /* Margin dirapatkan */
+  letter-spacing: -0.5px;
+}
+
+.reward-desc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 16px 0; /* Margin dirapatkan */
+  line-height: 1.5;
+}
+
+.reward-miles {
+  font-size: 14px;
+  font-weight: 800;
+  color: #000000; /* Hitam pekat */
+  margin: 0 0 6px 0; /* Margin dirapatkan */
+}
+
+.reward-period {
+  font-size: 13px;
+  color: #475569;
+  margin: 0 0 20px 0; /* Margin dirapatkan */
+}
+
+.btn-redeem {
+  background-color: #b91c1c; /* Merah gelap */
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  width: fit-content;
+  transition: background-color 0.2s;
+  /* Rahasia rata bawah: */
+  margin-top: auto; 
+}
+
+.btn-redeem:hover {
+  background-color: #991b1b;
+}
+
+/* RIWAYAT TABLE */
+.history-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.history-table th {
+  padding: 12px 0;
+  font-size: 13px;
+  color: #94a3b8;
+  border-bottom: 1px solid #f1f5f9;
+  text-transform: uppercase;
+}
+
+.history-table td {
+  padding: 16px 0;
+  font-size: 14px;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.history-hadiah-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.history-hadiah-nama {
+  font-weight: 700;
+  color: #000000;
+}
+
+.history-miles {
+  font-weight: 800;
+  color: #dc2626;
+}
+
+.lock-icon {
+  color: #94a3b8; /* Abu-abu untuk ikon gembok */
+}
+
+.text-center {
+  text-align: center;
+  color: #94a3b8;
+}
+
+/* === POPUP MODAL KONFIRMASI === */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background-color: rgba(0, 14, 51, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000;
+}
+.modal-box { background: #ffffff; padding: 24px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); }
+.modal-box h2 { font-size: 16px; margin-bottom: 16px; color: #000000; }
+.confirmation-detail { background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; color: #1a1a1a; line-height: 1.5; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+.btn-batal { background: transparent; border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 8px; cursor: pointer; color: #475569; font-weight: 600; }
+.btn-confirm { background: #b91c1c; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.btn-confirm:hover { background: #991b1b; }
