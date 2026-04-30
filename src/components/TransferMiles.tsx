@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import './Fitur.css';
 
 // Types
 
@@ -181,8 +182,7 @@ export default function TransferMiles({
   };
 
   return (
-    <div className="page-container" style={{ maxWidth: 900, textAlign: 'left' }}>
-
+<div className="page-container" style={{ width: '100%', maxWidth: 1000, textAlign: 'left' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>

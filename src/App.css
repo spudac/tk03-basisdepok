@@ -1,3 +1,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.dev-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 24px;
+  background: #fffbe6;
+  border-bottom: 1px solid #ffe53c;
+  flex-wrap: wrap;
+}
+
+.dev-switcher__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7a5f00;
+  margin-right: 4px;
+}
+
+.dev-switcher__btn {
+  padding: 4px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid #bfd0ff;
+  background: white;
+  color: #0044ff;
+  transition: all 0.15s;
+}
+
+.dev-switcher__btn:hover {
+  background: #eff3ff;
+}
+
+.dev-switcher__btn.active {
+  background: #0044ff;
+  color: white;
+  border-color: #0044ff;
+}

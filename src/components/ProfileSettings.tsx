@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import './Fitur.css';
 
 // Types 
 
@@ -102,17 +103,18 @@ const MASKAPAI_OPTIONS = [
 
 // Sub-components 
 
+// PERBAIKAN: FormField sekarang menerima `style` agar grid 3 kolom berfungsi
 function FormField({
   label,
   children,
-  fullWidth = false,
+  style,
 }: {
   label: string;
   children: React.ReactNode;
-  fullWidth?: boolean;
+  style?: React.CSSProperties;
 }) {
   return (
-    <div className={`form-group${fullWidth ? ' full-width' : ''}`}>
+    <div className="form-group" style={style}>
       <label className="form-label">{label}</label>
       {children}
     </div>
@@ -209,7 +211,7 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
   const activeData: ProfileData = role === 'member' ? { ...mockMember, ...formData, role: 'member' } : { ...mockStaf, ...formData, role: 'staf' };
 
   const update = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, [field]: value } as ProfileData));
     setSaveSuccess(false);
     setSaveError('');
   };
@@ -232,19 +234,19 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
   };
 
   return (
-    <div className="page-container" style={{ maxWidth: 860, textAlign: 'left' }}>
-      <h1 className="page-title" style={{ fontSize: 26, fontWeight: 800, marginBottom: 28, textAlign: 'left' }}>
+    <div className="page-container" style={{ maxWidth: 960, textAlign: 'left', width: '100%' }}>
+      <h1 className="page-title" style={{ fontSize: 26, fontWeight: 800, marginBottom: 24, textAlign: 'left' }}>
         Pengaturan Profil
       </h1>
 
-      {/* Data Profil */}
-      <div className="card" style={{ marginBottom: 24 }}>
-        <h2 className="card-title" style={{ color: '#111', textAlign: 'left' }}>Data Profil</h2>
+      <div className="card" style={{ padding: '28px 36px' }}>
+        <h2 className="card-title" style={{ color: '#111', textAlign: 'left', marginBottom: 20 }}>Data Profil</h2>
 
-        <div className="form-grid">
+        {/* Grid 3 Kolom */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
 
-          {/* Email — read only */}
-          <FormField label="Email" fullWidth>
+          {/* Baris 1: Email (2 kolom) & Salutation */}
+          <FormField label="Email" style={{ gridColumn: 'span 2' }}>
             <input
               type="email"
               className="form-control"
@@ -253,45 +255,6 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
               title="Email tidak dapat diubah"
             />
           </FormField>
-
-          {/* Member: Nomor Member + Tanggal Bergabung (read only) */}
-          {role === 'member' && (
-            <>
-              <FormField label="Nomor Member">
-                <input
-                  type="text"
-                  className="form-control"
-                  value={(activeData as MemberData).nomor_member}
-                  disabled
-                  title="Nomor member tidak dapat diubah"
-                />
-              </FormField>
-              <FormField label="Tanggal Bergabung">
-                <input
-                  type="text"
-                  className="form-control"
-                  value={(activeData as MemberData).tanggal_bergabung}
-                  disabled
-                  title="Tanggal bergabung tidak dapat diubah"
-                />
-              </FormField>
-            </>
-          )}
-
-          {/* Staf: ID Staf (read only) */}
-          {role === 'staf' && (
-            <FormField label="ID Staf" fullWidth>
-              <input
-                type="text"
-                className="form-control"
-                value={(activeData as StafData).id_staf}
-                disabled
-                title="ID Staf tidak dapat diubah"
-              />
-            </FormField>
-          )}
-
-          {/* Salutation */}
           <FormField label="Salutation">
             <select
               className="form-control"
@@ -304,9 +267,7 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
             </select>
           </FormField>
 
-          <div />
-
-          {/* Nama Depan + Nama Tengah */}
+          {/* Baris 2: Nama */}
           <FormField label="Nama Depan">
             <input
               type="text"
@@ -322,7 +283,7 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
               className="form-control"
               value={activeData.middle_name}
               onChange={e => update('middle_name', e.target.value)}
-              placeholder="Nama tengah (opsional)"
+              placeholder="Opsional"
             />
           </FormField>
           <FormField label="Nama Belakang">
@@ -335,7 +296,7 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
             />
           </FormField>
 
-          {/* Kewarganegaraan */}
+          {/* Baris 3: Kewarganegaraan & Kontak */}
           <FormField label="Kewarganegaraan">
             <select
               className="form-control"
@@ -347,8 +308,6 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
               ))}
             </select>
           </FormField>
-
-          {/* Country Code + Nomor HP */}
           <FormField label="Country Code">
             <select
               className="form-control"
@@ -370,7 +329,7 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
             />
           </FormField>
 
-          {/* Tanggal Lahir */}
+          {/* Baris 4: Tanggal Lahir & Info Keanggotaan */}
           <FormField label="Tanggal Lahir">
             <input
               type="date"
@@ -380,43 +339,79 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
             />
           </FormField>
 
-          {/* Staf: Kode Maskapai (editable) */}
-          {role === 'staf' && (
-            <FormField label="Kode Maskapai">
-              <select
-                className="form-control"
-                value={(activeData as StafData).kode_maskapai}
-                onChange={e => update('kode_maskapai', e.target.value)}
-              >
-                {MASKAPAI_OPTIONS.map(m => (
-                  <option key={m.kode} value={m.kode}>
-                    {m.kode} - {m.nama}
-                  </option>
-                ))}
-              </select>
-            </FormField>
+          {role === 'member' && (
+            <>
+              <FormField label="Nomor Member">
+                <input
+                  type="text"
+                  className="form-control"
+                  value={(activeData as MemberData).nomor_member}
+                  disabled
+                />
+              </FormField>
+              <FormField label="Tanggal Bergabung">
+                <input
+                  type="text"
+                  className="form-control"
+                  value={(activeData as MemberData).tanggal_bergabung}
+                  disabled
+                />
+              </FormField>
+            </>
           )}
 
+          {role === 'staf' && (
+            <>
+              <FormField label="ID Staf">
+                <input
+                  type="text"
+                  className="form-control"
+                  value={(activeData as StafData).id_staf}
+                  disabled
+                />
+              </FormField>
+              <FormField label="Kode Maskapai">
+                <select
+                  className="form-control"
+                  value={(activeData as StafData).kode_maskapai}
+                  onChange={e => update('kode_maskapai', e.target.value)}
+                >
+                  {MASKAPAI_OPTIONS.map(m => (
+                    <option key={m.kode} value={m.kode}>
+                      {m.kode} - {m.nama}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+            </>
+          )}
         </div>
 
-        {/* Feedback */}
+        {/* Feedback Messages */}
         {saveError && <div style={{ ...errorBannerStyle, marginTop: 16 }}>{saveError}</div>}
         {saveSuccess && <div style={{ ...successBannerStyle, marginTop: 16 }}>Perubahan berhasil disimpan!</div>}
 
-        <button className="btn-primary" onClick={handleSimpan}>
-          Simpan Perubahan
-        </button>
-      </div>
-
-      {/* Ubah Password */}
-      <div className="card">
-        <h2 className="card-title" style={{ color: '#111', textAlign: 'left' }}>Ubah Password</h2>
-        <button
-          onClick={() => setShowPasswordModal(true)}
-          style={ubahPasswordButtonStyle}
-        >
-          Ubah Password
-        </button>
+        {/* Footer: Tombol Ubah Password & Simpan */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: 28,
+          paddingTop: 24,
+          borderTop: '1px solid #e2eaff'
+        }}>
+          <button
+            className="btn-outline"
+            onClick={() => setShowPasswordModal(true)}
+            style={{ margin: 0 }}
+          >
+            Ubah Password
+          </button>
+          
+          <button className="btn-primary" onClick={handleSimpan} style={{ margin: 0 }}>
+            Simpan Perubahan
+          </button>
+        </div>
       </div>
 
       {/* Modal Ubah Password */}
@@ -486,33 +481,4 @@ const successBannerStyle: React.CSSProperties = {
   padding: '10px 14px',
   fontSize: 14,
   fontFamily: "'Inter', sans-serif",
-};
-
-const ubahPasswordButtonStyle: React.CSSProperties = {
-  padding: '12px 24px',
-  borderRadius: '12px',
-  background: 'transparent',
-  color: '#4a5578',
-  fontSize: '14px',
-  fontWeight: 700,
-  border: '1.5px solid #d0d8ef',
-  cursor: 'pointer',
-  fontFamily: "'Inter', sans-serif",
-  transition: 'all 0.2s',
-};
-
-const saveButtonStyle: React.CSSProperties = {
-  padding: '12px 24px',
-  borderRadius: '12px',
-  background: 'linear-gradient(135deg, #6a90f0, #4d6fe0)',
-  color: '#ffffff',
-  fontSize: '14px',
-  fontWeight: 700,
-  border: 'none',
-  cursor: 'pointer',
-  boxShadow: '0 4px 14px rgba(77,111,224,0.35)',
-  fontFamily: "'Inter', sans-serif",
-  transition: 'opacity 0.2s',
-  width: '100%',
-  marginTop: '12px',
 };

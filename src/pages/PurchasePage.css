@@ -1,0 +1,117 @@
+.purchase-container {
+  padding: 32px 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.purchase-header { margin-bottom: 24px; }
+.purchase-header h1 { 
+  font-size: 24px; 
+  color: var(--primary-950); 
+  margin-bottom: 8px; 
+  letter-spacing: normal;
+}
+.purchase-header p { 
+  color: var(--white-800); 
+  font-size: 14px; 
+}
+.purchase-header strong {
+  color: var(--primary-950);
+  font-weight: 800;
+}
+
+.package-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.package-card {
+  background: var(--white-100);
+  border: 1px solid var(--primary-200);
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+  text-align: left; /* Teks dibikin rata kiri */
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 20, 74, 0.03);
+}
+
+.package-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: #1e3a8a; /* Biru sangat gelap sesuai mockup */
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.package-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  background-color: var(--primary-100);
+  color: var(--primary-600);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.package-miles {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary-950);
+  margin-bottom: 4px;
+}
+
+.package-miles-label {
+  font-size: 13px;
+  color: var(--white-800);
+  margin-bottom: 16px;
+}
+
+.package-price {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary-950);
+  margin-bottom: 24px;
+}
+
+.btn-buy {
+  width: 100%;
+  background: #1e3a8a; /* Biru gelap */
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-buy:hover {
+  opacity: 0.9;
+}
+
+/* Modal Styling */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background-color: rgba(0, 14, 51, 0.6);
+  display: flex; justify-content: center; align-items: center; z-index: 1000;
+}
+.modal-box {
+  background: var(--white-100); padding: 24px; border-radius: 12px; width: 90%; max-width: 400px;
+}
+.modal-box h2 { font-size: 16px; margin-bottom: 16px; color: var(--primary-950); }
+.confirmation-detail { background: var(--primary-50); padding: 16px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; }
+.conf-row { display: flex; justify-content: space-between; margin-top: 8px; }
+.text-primary { color: #16a34a; font-weight: 700; }
+.text-bold { font-weight: 700; color: var(--primary-950); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+.btn-batal { background: transparent; border: 1px solid var(--primary-200); padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+.btn-confirm { background: #1e3a8a; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
