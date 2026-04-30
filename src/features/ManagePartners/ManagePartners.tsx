@@ -1,5 +1,4 @@
 import { useState } from "react";
-import StaffNavbar from "../../components/StaffNavbar";
 
 /* ── Types ── */
 interface Mitra {
@@ -132,7 +131,6 @@ export default function KelolaMitra() {
   return (
     <div style={ps.root}>
       <style>{css}</style>
-      <StaffNavbar />
 
       <main style={ps.main}>
         {/* Page header */}

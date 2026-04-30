@@ -1,5 +1,4 @@
 import { useState } from "react";
-import StaffNavbar from "../../components/StaffNavbar";
 
 /* ── Types ── */
 interface Hadiah {
@@ -200,7 +199,6 @@ export default function KelolaHadiah() {
   return (
     <div style={ps.root}>
       <style>{css}</style>
-      <StaffNavbar />
 
       {/* ── Scrollable main area ── */}
       <main style={ps.main}>
