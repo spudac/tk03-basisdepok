@@ -30,6 +30,7 @@ type ProfileData = MemberData | StafData;
 
 interface ProfileSettingsProps {
   role: 'member' | 'staf';
+  email: string;
 }
 
 // Mock Data 
