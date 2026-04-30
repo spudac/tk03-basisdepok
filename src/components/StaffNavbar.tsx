@@ -50,12 +50,12 @@ const StaffNavbar: React.FC<StaffNavbarProps> = ({ userName = '[Name]' }) => {
           <span>Laporan Transaksi</span>
         </div>
         
-        <div className="nav-item" onClick={() => navigate('/staff/rewards')}>
+        <div className="nav-item" onClick={() => navigate('/staff/kelola-hadiah')}>
           <img src={hadiahIcon} alt="Kelola Hadiah" />
           <span>Kelola Hadiah</span>
         </div>
         
-        <div className="nav-item" onClick={() => navigate('/staff/partners')}>
+        <div className="nav-item" onClick={() => navigate('/staff/kelola-mitra')}>
           <img src={mitraIcon} alt="Kelola Mitra" />
           <span>Kelola Mitra</span>
         </div>

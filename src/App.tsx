@@ -21,6 +21,8 @@ import './App.css';
 // --- Imports untuk Auth ---
 import Login from './features/auth/Auth.tsx';
 import Register from './features/register/Register.tsx';
+import KelolaHadiah from './features/ManageGifts/ManageGifts.tsx';
+import KelolaMitra from './features/ManagePartners/ManagePartners.tsx';
 import LoggedInNavbar from './components/LoggedInNavbar.tsx';
 import StaffNavbar from './components/StaffNavbar.tsx';
 
@@ -131,6 +133,8 @@ function AppContent() {
         {/* Rute Staf */}
         <Route path="/staff/transactions" element={<ReportPage />} />
         <Route path="/staff/dashboard" element={<DashboardPage role={role} member={MOCK_MEMBER} staf={MOCK_STAF} stats={MOCK_DASHBOARD_STATS} recentTransactions={[]} />} />
+        <Route path="/staff/kelola-hadiah" element={<KelolaHadiah />}></Route>
+        <Route path="/staff/kelola-mitra" element={<KelolaMitra />}></Route>
         
         {/* Rute Member */}
         <Route path="/redeem" element={<RedeemPage member={MOCK_MEMBER} />} />
