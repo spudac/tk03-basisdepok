@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dev Role Switcher — remove once navbar/auth is implemented */
 .dev-switcher {
   display: flex;
   align-items: center;

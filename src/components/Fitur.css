@@ -1,0 +1,118 @@
+.page-container {
+  max-width: 800px;
+  margin: 40px auto; 
+  padding: 0 20px;
+  font-family: 'Inter', sans-serif;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: var(--white-950, #1a1a1a);
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 10px 30px rgba(77,111,224,0.08);
+  border: 1px solid #e2eaff;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--white-900, #333);
+}
+
+.form-control {
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  color: var(--white-900, #333);
+  background-color: #ffffff;
+  transition: all 0.2s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #7096ff;
+  box-shadow: 0 0 0 3px rgba(112, 150, 255, 0.2);
+}
+
+.form-control:disabled {
+  background-color: #f5f5f5;
+  color: var(--white-800, #808080);
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #6a90f0, #4d6fe0);
+  color: #ffffff;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(77,111,224,0.35);
+  transition: transform 0.1s, opacity 0.2s;
+  margin-top: 12px;
+  font-family: 'Inter', sans-serif;
+  text-align: center;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: #4a5578;
+  padding: 12px 24px;
+  border: 1.5px solid #d0d8ef;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 12px;
+  font-family: 'Inter', sans-serif;
+  text-align: center;
+}
+
+.btn-outline:hover {
+  background: #f8f9fc;
+}
+
+@media (max-width: 1024px) {
+  .page-container { margin: 20px auto; }
+  .form-grid { grid-template-columns: 1fr; }
+}

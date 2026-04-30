@@ -1,8 +1,6 @@
-// src/App.tsx
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
-// --- Imports untuk Main App ---
 import Navbar from './components/Navbar';
 import DashboardPage from './pages/DashboardPage';
 import RedeemPage from './pages/RedeemPage';
@@ -18,37 +16,45 @@ import {
 } from './data/mockData';
 import './App.css';
 
-// --- Imports untuk Auth ---
 import Login from './features/auth/Auth.tsx';
 import Register from './features/register/Register.tsx';
 import KelolaHadiah from './features/ManageGifts/ManageGifts.tsx';
 import KelolaMitra from './features/ManagePartners/ManagePartners.tsx';
 import LoggedInNavbar from './components/LoggedInNavbar.tsx';
 import StaffNavbar from './components/StaffNavbar.tsx';
+import ProfileSettings from './components/ProfileSettings';
+import ClaimMissingMilesMember from './components/ClaimMissingMilesMember';
+import TransferMiles from './components/TransferMiles';
+import ClaimMissingMilesStaf from './components/ClaimMissingMilesStaf';
 
-// --- Interface Props untuk MainApp ---
+function PageContainer({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ 
+      padding: '40px 20px', 
+      background: 'linear-gradient(135deg, #c8d8f8 0%, #dde8f8 35%, #eee8dc 70%, #f5f0e8 100%)', 
+      minHeight: 'calc(100vh - 80px)', 
+      display: 'flex', 
+      flexDirection: 'column',
+      alignItems: 'center', 
+      fontFamily: "'Inter', sans-serif"
+    }}>
+      {children}
+    </div>
+  );
+}
+
 interface MainAppProps {
   role: Role;
 }
 
-// Komponen untuk membungkus halaman utama (Route "/")
 function MainApp({ role }: MainAppProps) {
   const [currentPage, setCurrentPage] = useState('dashboard');
-
   const activeMember = MOCK_MEMBER;
 
   const renderContent = () => {
     switch (currentPage) {
       case 'dashboard':
-        return (
-          <DashboardPage
-            role={role}
-            member={activeMember}
-            staf={MOCK_STAF}
-            stats={MOCK_DASHBOARD_STATS}
-            recentTransactions={MOCK_RECENT_TRANSACTIONS_MEMBER}
-          />
-        );
+        return <DashboardPage role={role} member={activeMember} staf={MOCK_STAF} stats={MOCK_DASHBOARD_STATS} recentTransactions={MOCK_RECENT_TRANSACTIONS_MEMBER} />;
       case 'redeem':
         return <RedeemPage member={activeMember} />;
       case 'purchase':
@@ -61,15 +67,7 @@ function MainApp({ role }: MainAppProps) {
         if (role !== 'staf') return null;
         return <ReportPage />;
       default:
-        return (
-          <DashboardPage 
-            role={role} 
-            member={activeMember} 
-            staf={MOCK_STAF} 
-            stats={MOCK_DASHBOARD_STATS} 
-            recentTransactions={[]} 
-          />
-        );
+        return <DashboardPage role={role} member={activeMember} staf={MOCK_STAF} stats={MOCK_DASHBOARD_STATS} recentTransactions={[]} />;
     }
   };
 
@@ -82,14 +80,11 @@ function MainApp({ role }: MainAppProps) {
   );
 }
 
-// --- Komponen AppContent (Berisi Logika Routing & Navbar) ---
 function AppContent() {
   const [role, setRole] = useState<Role>('member');
-  
   const location = useLocation(); 
   const isGuestPage = location.pathname === '/login' || location.pathname === '/register';
 
-  // useEffect untuk mendeteksi URL dan mengubah role otomatis
   useEffect(() => {
     const path = location.pathname;
 
@@ -100,24 +95,20 @@ function AppContent() {
       path === '/buy-package' || 
       path === '/tier-info' || 
       path === '/dashboard' ||
-      path === '/'
+      path === '/' ||
+      path === '/settings' || 
+      path === '/claim-miles' ||
+      path === '/transfer-miles'
     ) {
       setRole('member');
     }
   }, [location.pathname]);
 
   const renderNavbar = () => {
-    if (isGuestPage) {
-      return <Navbar />;
-    }
-
-    if (role === 'member') {
-      return <LoggedInNavbar />;
-    } else if (role === 'staf') {
-      return <StaffNavbar />;
-    } else {
-      return <Navbar />;
-    }
+    if (isGuestPage) return <Navbar />;
+    if (role === 'member') return <LoggedInNavbar />;
+    if (role === 'staf') return <StaffNavbar />;
+    return <Navbar />;
   };
 
   return (
@@ -130,17 +121,28 @@ function AppContent() {
         
         <Route path="/" element={<MainApp role={role} />} />
 
-        {/* Rute Staf */}
+        {/* --- Rute Staf --- */}
         <Route path="/staff/transactions" element={<ReportPage />} />
         <Route path="/staff/dashboard" element={<DashboardPage role={role} member={MOCK_MEMBER} staf={MOCK_STAF} stats={MOCK_DASHBOARD_STATS} recentTransactions={[]} />} />
-        <Route path="/staff/kelola-hadiah" element={<KelolaHadiah />}></Route>
-        <Route path="/staff/kelola-mitra" element={<KelolaMitra />}></Route>
         
-        {/* Rute Member */}
+        {/* Rute Baru dari Temanmu */}
+        <Route path="/staff/kelola-hadiah" element={<KelolaHadiah />} />
+        <Route path="/staff/kelola-mitra" element={<KelolaMitra />} />
+        
+        {/* Rute Staf (Fitur Kamu) */}
+        <Route path="/staff/settings" element={<PageContainer><ProfileSettings role="staf" email="staff@aero.com" /></PageContainer>} />
+        <Route path="/staff/claims" element={<PageContainer><ClaimMissingMilesStaf /></PageContainer>} />
+        
+        {/* --- Rute Member --- */}
         <Route path="/redeem" element={<RedeemPage member={MOCK_MEMBER} />} />
         <Route path="/buy-package" element={<PurchasePage member={MOCK_MEMBER} />} />
         <Route path="/tier-info" element={<InfoTierPage member={MOCK_MEMBER} />} />
         <Route path="/dashboard" element={<DashboardPage role={role} member={MOCK_MEMBER} staf={MOCK_STAF} stats={MOCK_DASHBOARD_STATS} recentTransactions={[]} />} />
+
+        {/* Rute Member (Fitur Kamu) */}
+        <Route path="/settings" element={<PageContainer><ProfileSettings role="member" email="user@mail.com" /></PageContainer>} />
+        <Route path="/claim-miles" element={<PageContainer><ClaimMissingMilesMember /></PageContainer>} />
+        <Route path="/transfer-miles" element={<PageContainer><TransferMiles /></PageContainer>} />
 
         {/* Redirect unknown routes ke login */}
         <Route path="*" element={<Navigate to="/login" replace />} />
@@ -149,7 +151,6 @@ function AppContent() {
   );
 }
 
-// --- Komponen App Utama ---
 export default function App() {
   return (
     <BrowserRouter>
