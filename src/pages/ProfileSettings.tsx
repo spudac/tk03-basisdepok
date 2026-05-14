@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import './Fitur.css';
+import '@components/Fitur.css';
 
 // Types 
 

@@ -5,6 +5,6 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'dummy-key'
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   db: {
-    schema: 'aeromiles', // PostgreSQL schemas are lowercase by default unless quoted
+    schema: 'aeromiles',
   },
 })
