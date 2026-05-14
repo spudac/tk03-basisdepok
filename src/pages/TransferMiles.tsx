@@ -1,85 +1,111 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '@components/Fitur.css';
-
-// Types
+import { supabase } from '@/supabase';
 
 type TipeTransfer = 'Kirim' | 'Terima';
 
 interface Transfer {
-  id: number;
+  key: string;
   timestamp: string;
-  nama_member: string;
-  email_member: string;
-  jumlah_miles: number; 
-  catatan: string;
+  other_email: string;
+  other_name: string;
+  jumlah: number;
+  catatan: string | null;
   tipe: TipeTransfer;
 }
 
-interface TransferMilesProps {
-  emailMember?: string;
-  awardMilesAwal?: number;
+
+async function fetchTransferHistory(userEmail: string): Promise<Transfer[]> {
+  const [{ data: sent }, { data: received }] = await Promise.all([
+    supabase
+      .from('transfer')
+      .select('email_member_1, email_member_2, timestamp, jumlah, catatan')
+      .eq('email_member_1', userEmail)
+      .order('timestamp', { ascending: false }),
+    supabase
+      .from('transfer')
+      .select('email_member_1, email_member_2, timestamp, jumlah, catatan')
+      .eq('email_member_2', userEmail)
+      .order('timestamp', { ascending: false }),
+  ]);
+
+
+  const otherEmails = new Set<string>();
+  (sent ?? []).forEach(r => otherEmails.add(r.email_member_2));
+  (received ?? []).forEach(r => otherEmails.add(r.email_member_1));
+
+  const nameMap: Record<string, string> = {};
+  if (otherEmails.size > 0) {
+    const { data: pengguna } = await supabase
+      .from('pengguna')
+      .select('email, first_mid_name, last_name')
+      .in('email', Array.from(otherEmails));
+    (pengguna ?? []).forEach(p => {
+      nameMap[p.email] = `${p.first_mid_name} ${p.last_name}`.trim();
+    });
+  }
+
+  const toTransfer = (
+    row: { email_member_1: string; email_member_2: string; timestamp: string; jumlah: number; catatan: string | null },
+    tipe: TipeTransfer
+  ): Transfer => {
+    const otherEmail = tipe === 'Kirim' ? row.email_member_2 : row.email_member_1;
+    return {
+      key: `${row.email_member_1}-${row.email_member_2}-${row.timestamp}`,
+      timestamp: row.timestamp,
+      other_email: otherEmail,
+      other_name: nameMap[otherEmail] ?? otherEmail,
+      jumlah: row.jumlah,
+      catatan: row.catatan,
+      tipe,
+    };
+  };
+
+  const all = [
+    ...(sent ?? []).map(r => toTransfer(r, 'Kirim')),
+    ...(received ?? []).map(r => toTransfer(r, 'Terima')),
+  ];
+
+
+  all.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
+  return all;
 }
 
-// Mock Data
 
-const MOCK_TRANSFERS: Transfer[] = [
-  {
-    id: 1,
-    timestamp: '2025-01-15 10:30',
-    nama_member: 'Jane Smith',
-    email_member: 'jane@example.com',
-    jumlah_miles: 5000,
-    catatan: 'Hadiah ulang tahun',
-    tipe: 'Kirim',
-  },
-  {
-    id: 2,
-    timestamp: '2025-02-01 14:00',
-    nama_member: 'Budi A. Santoso',
-    email_member: 'budi@example.com',
-    jumlah_miles: 2000,
-    catatan: '',
-    tipe: 'Terima',
-  },
-];
-
-// Simulasi daftar member aktif di sistem
-const MOCK_MEMBER_EMAILS = [
-  'jane@example.com',
-  'budi@example.com',
-  'john@example.com',
-  'sari@example.com',
-];
-
-// Transfer Form Modal
 
 function TransferModal({
-  emailMember,
+  userEmail,
   awardMiles,
   onSubmit,
   onClose,
 }: {
-  emailMember: string;
+  userEmail: string;
   awardMiles: number;
-  onSubmit: (email: string, jumlah: number, catatan: string) => void;
+  onSubmit: (email: string, jumlah: number, catatan: string) => Promise<string | null>;
   onClose: () => void;
 }) {
   const [emailPenerima, setEmailPenerima] = useState('');
   const [jumlah, setJumlah] = useState<number | ''>('');
   const [catatan, setCatatan] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleTransfer = () => {
+  const handleTransfer = async () => {
     setError('');
 
     if (!emailPenerima.trim()) { setError('Email penerima wajib diisi.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailPenerima)) { setError('Format email tidak valid.'); return; }
-    if (emailPenerima.toLowerCase() === emailMember.toLowerCase()) { setError('Tidak dapat mentransfer miles ke diri sendiri.'); return; }
-    if (!MOCK_MEMBER_EMAILS.includes(emailPenerima.toLowerCase())) { setError('Email penerima tidak terdaftar sebagai Member aktif.'); return; }
+    if (emailPenerima.toLowerCase() === userEmail.toLowerCase()) { setError('Tidak dapat mentransfer miles ke diri sendiri.'); return; }
     if (!jumlah || jumlah <= 0) { setError('Jumlah miles harus lebih dari 0.'); return; }
     if (jumlah > awardMiles) { setError(`Award miles tidak mencukupi. Miles tersedia: ${awardMiles.toLocaleString()}.`); return; }
 
-    onSubmit(emailPenerima, jumlah as number, catatan);
+    setLoading(true);
+    const rpcError = await onSubmit(emailPenerima, jumlah as number, catatan);
+    setLoading(false);
+
+    if (rpcError) {
+      setError(rpcError);
+    }
   };
 
   return (
@@ -127,6 +153,7 @@ function TransferModal({
               onChange={e => setCatatan(e.target.value)}
               placeholder="cth: Hadiah ulang tahun"
               rows={3}
+              maxLength={255}
               style={{ resize: 'vertical', fontFamily: 'inherit' }}
             />
           </div>
@@ -136,8 +163,13 @@ function TransferModal({
 
         {/* Footer */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-          <button className="btn-primary" style={{ marginTop: 0 }} onClick={handleTransfer}>
-            Transfer
+          <button
+            className="btn-primary"
+            style={{ marginTop: 0, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
+            onClick={handleTransfer}
+            disabled={loading}
+          >
+            {loading ? 'Mengirim...' : 'Transfer'}
           </button>
         </div>
       </div>
@@ -145,44 +177,62 @@ function TransferModal({
   );
 }
 
-// Main Component
+// Main component
+export default function TransferMiles() {
+  const session = JSON.parse(sessionStorage.getItem('aeromiles_user') ?? '{}');
+  const userEmail: string = session.email ?? '';
 
-export default function TransferMiles({
-  emailMember = 'user1@mail.com',
-  awardMilesAwal = 32000,
-}: TransferMilesProps) {
-  const [transfers, setTransfers] = useState<Transfer[]>(MOCK_TRANSFERS);
-  const [awardMiles, setAwardMiles] = useState(awardMilesAwal);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const [awardMiles, setAwardMiles] = useState<number>(session.award_miles ?? 0);
   const [showModal, setShowModal] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
-  function nowTimestamp() {
-    return new Date().toISOString().replace('T', ' ').substring(0, 16);
+  async function loadHistory() {
+    if (!userEmail) return;
+    setLoadingHistory(true);
+    const data = await fetchTransferHistory(userEmail);
+    setTransfers(data);
+    setLoadingHistory(false);
   }
 
-  const handleSubmit = (emailPenerima: string, jumlah: number, catatan: string) => {
-    // Simulasi nama penerima dari email
-    const namaPenerima = emailPenerima.split('@')[0]
-      .replace(/\./g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase());
+  async function refreshAwardMiles() {
+    if (!userEmail) return;
+    const { data } = await supabase
+      .from('member')
+      .select('award_miles')
+      .eq('email', userEmail)
+      .single();
+    if (data) {
+      setAwardMiles(data.award_miles ?? 0);
 
-    const newTransfer: Transfer = {
-      id: Date.now(),
-      timestamp: nowTimestamp(),
-      nama_member: namaPenerima,
-      email_member: emailPenerima,
-      jumlah_miles: jumlah,
-      catatan,
-      tipe: 'Kirim',
-    };
+      const stored = JSON.parse(sessionStorage.getItem('aeromiles_user') ?? '{}');
+      sessionStorage.setItem('aeromiles_user', JSON.stringify({ ...stored, award_miles: data.award_miles }));
+    }
+  }
 
-    // TODO: POST /api/transfer-miles
-    setTransfers(prev => [newTransfer, ...prev]);
-    setAwardMiles(prev => prev - jumlah);
+  useEffect(() => {
+    loadHistory();
+    refreshAwardMiles();
+
+  }, [userEmail]);
+
+  const handleSubmit = async (emailPenerima: string, jumlah: number, catatan: string): Promise<string | null> => {
+    const { error } = await supabase.rpc('transfer_miles', {
+      sender_email: userEmail,
+      receiver_email: emailPenerima,
+      transfer_amt: jumlah,
+      notes: catatan.trim() === '' ? null : catatan,
+    });
+
+    if (error) return error.message;
+
+    await Promise.all([loadHistory(), refreshAwardMiles()]);
     setShowModal(false);
+    return null;
   };
 
   return (
-<div className="page-container" style={{ width: '100%', maxWidth: 1000, textAlign: 'left' }}>
+    <div className="page-container" style={{ width: '100%', maxWidth: 1000, textAlign: 'left' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
@@ -217,37 +267,40 @@ export default function TransferMiles({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                {['Waktu', 'Member', 'Jumlah Miles', 'Catatan', 'Tipe', 'Aksi'].map(h => (
+                {['Waktu', 'Member', 'Jumlah Miles', 'Catatan', 'Tipe'].map(h => (
                   <th key={h} style={thStyle}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {transfers.length === 0 ? (
+              {loadingHistory ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--white-800)', fontSize: 14 }}>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--white-800)', fontSize: 14 }}>
+                    Memuat riwayat...
+                  </td>
+                </tr>
+              ) : transfers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--white-800)', fontSize: 14 }}>
                     Belum ada riwayat transfer.
                   </td>
                 </tr>
               ) : (
                 transfers.map((t, i) => (
-                  <tr key={t.id} style={{ borderBottom: '1px solid #f3f4f6', backgroundColor: i % 2 === 0 ? 'transparent' : '#fafafa' }}>
+                  <tr key={t.key} style={{ borderBottom: '1px solid #f3f4f6', backgroundColor: i % 2 === 0 ? 'transparent' : '#fafafa' }}>
 
-                    <td style={tdStyle}>{t.timestamp}</td>
+                    <td style={tdStyle}>{t.timestamp.replace('T', ' ').substring(0, 16)}</td>
 
                     {/* Member: nama + email */}
                     <td style={tdStyle}>
-                      <div style={{ fontWeight: 600 }}>{t.nama_member}</div>
-                      <div style={{ fontSize: 12, color: 'var(--white-800)' }}>{t.email_member}</div>
+                      <div style={{ fontWeight: 600 }}>{t.other_name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--white-800)' }}>{t.other_email}</div>
                     </td>
 
                     {/* Jumlah: merah minus untuk Kirim, hijau plus untuk Terima */}
                     <td style={tdStyle}>
-                      <span style={{
-                        fontWeight: 700,
-                        color: t.tipe === 'Kirim' ? '#ef4444' : '#22c55e',
-                      }}>
-                        {t.tipe === 'Kirim' ? '-' : '+'}{t.jumlah_miles.toLocaleString('id-ID')}
+                      <span style={{ fontWeight: 700, color: t.tipe === 'Kirim' ? '#ef4444' : '#22c55e' }}>
+                        {t.tipe === 'Kirim' ? '-' : '+'}{t.jumlah.toLocaleString('id-ID')}
                       </span>
                     </td>
 
@@ -258,46 +311,14 @@ export default function TransferMiles({
                     {/* Tipe badge */}
                     <td style={tdStyle}>
                       {t.tipe === 'Terima' ? (
-                        <span style={{
-                          backgroundColor: 'var(--primary-800)',
-                          color: 'white',
-                          padding: '3px 10px',
-                          borderRadius: 12,
-                          fontSize: 12,
-                          fontWeight: 700,
-                        }}>
+                        <span style={{ backgroundColor: 'var(--primary-800)', color: 'white', padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 700 }}>
                           Terima
                         </span>
                       ) : (
-                        <span style={{
-                          backgroundColor: 'white',
-                          color: '#111',
-                          padding: '3px 10px',
-                          borderRadius: 12,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          border: '1.5px solid #111',
-                        }}>
+                        <span style={{ backgroundColor: 'white', color: '#111', padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 700, border: '1.5px solid #111' }}>
                           Kirim
                         </span>
                       )}
-                    </td>
-
-                    {/* Aksi: ikon cetak/detail (tidak bisa edit/hapus) */}
-                    <td style={tdStyle}>
-                      <button
-                        title="Lihat detail"
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'default',
-                          fontSize: 16,
-                          color: 'var(--white-800)',
-                          opacity: 0.5,
-                        }}
-                      >
-                        🔒
-                      </button>
                     </td>
                   </tr>
                 ))
@@ -310,7 +331,7 @@ export default function TransferMiles({
       {/* Modal */}
       {showModal && (
         <TransferModal
-          emailMember={emailMember}
+          userEmail={userEmail}
           awardMiles={awardMiles}
           onSubmit={handleSubmit}
           onClose={() => setShowModal(false)}
@@ -320,7 +341,6 @@ export default function TransferMiles({
   );
 }
 
-// Styles
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
@@ -389,33 +409,6 @@ const errorBannerStyle: React.CSSProperties = {
   padding: '10px 14px',
   fontSize: 14,
   fontFamily: "'Inter', sans-serif",
-};
-
-const submitButtonStyle: React.CSSProperties = {
-  padding: '12px 24px',
-  borderRadius: '12px',
-  background: 'linear-gradient(135deg, #6a90f0, #4d6fe0)',
-  color: '#ffffff',
-  fontSize: '14px',
-  fontWeight: 700,
-  border: 'none',
-  cursor: 'pointer',
-  boxShadow: '0 4px 14px rgba(77,111,224,0.35)',
-  fontFamily: "'Inter', sans-serif",
-  flex: 1,
-};
-
-const cancelButtonStyle: React.CSSProperties = {
-  padding: '12px 24px',
-  borderRadius: '12px',
-  background: 'transparent',
-  color: '#4a5578',
-  fontSize: '14px',
-  fontWeight: 700,
-  border: '1.5px solid #d0d8ef',
-  cursor: 'pointer',
-  fontFamily: "'Inter', sans-serif",
-  flex: 1,
 };
 
 const thStyle: React.CSSProperties = {
