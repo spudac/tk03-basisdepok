@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/supabase";
+import { hashSHA256 } from "@utils/hash";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -16,10 +18,59 @@ export default function Login() {
     }
     setError("");
     setIsLoading(true);
-    // TODO: replace with real auth logic
-    await new Promise((res) => setTimeout(res, 800));
-    setIsLoading(false);
-    navigate("/");
+    try {
+      const hashed = await hashSHA256(password);
+      const { error: rpcError } = await supabase.rpc("login_validation", {
+        login_email: email,
+        hashed_password: hashed,
+      });
+      if (rpcError) throw rpcError;
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (authError) throw authError;
+
+      const { data: penggunaData, error: penggunaError } = await supabase
+        .from("pengguna")
+        .select(
+          "first_mid_name, last_name, salutation, country_code, mobile_number, tanggal_lahir, kewarganegaraan"
+        )
+        .eq("email", email)
+        .single();
+      if (penggunaError) throw penggunaError;
+
+      const { data: memberData } = await supabase
+        .from("member")
+        .select("nomor_member, tanggal_bergabung, id_tier, award_miles, total_miles")
+        .eq("email", email)
+        .single();
+
+      if (memberData) {
+        sessionStorage.setItem(
+          "aeromiles_user",
+          JSON.stringify({ email, role: "member", ...penggunaData, ...memberData })
+        );
+        navigate("/dashboard");
+      } else {
+        const { data: stafData, error: stafError } = await supabase
+          .from("staf")
+          .select("id_staf, kode_maskapai")
+          .eq("email", email)
+          .single();
+        if (stafError) throw new Error("Account not linked to member or staf.");
+        sessionStorage.setItem(
+          "aeromiles_user",
+          JSON.stringify({ email, role: "staf", ...penggunaData, ...stafData })
+        );
+        navigate("/staff/dashboard");
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Login failed.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCancel = () => {

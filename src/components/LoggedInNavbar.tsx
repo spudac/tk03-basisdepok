@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/supabase';
 import aeroMilesLogo from '../assets/AeroMiles Logo.svg';
 import profileIcon from '../assets/Profile.svg';
 import claimMilesIcon from '../assets/ClaimMiles.svg';
@@ -70,8 +71,9 @@ const LoggedInNavbar: React.FC<LoggedInNavbarProps> = ({ userName = '[Name]' }) 
           <img src={settingsIcon} alt="Settings" />
         </div>
 
-        <div className="nav-item-logout" onClick={() => {
-          // Add logout logic here
+        <div className="nav-item-logout" onClick={async () => {
+          sessionStorage.removeItem('aeromiles_user');
+          await supabase.auth.signOut();
           navigate('/login');
         }}>
           <span>Logout</span>

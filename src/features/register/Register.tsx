@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import planePhoto from "../../assets/planePhoto.avif";
+import planePhoto from "@assets/planePhoto.avif";
+import { supabase } from "@/supabase";
+import { hashSHA256 } from "@utils/hash";
 
 type Role = "member" | "staff";
 type Salutation = "Mr." | "Ms." | "Mrs.";
@@ -11,11 +13,10 @@ const COUNTRIES = [
   "Canada", "India", "Thailand", "Vietnam", "Philippines",
 ];
 
-const AIRLINES = [
-  "Garuda Indonesia", "Lion Air", "Batik Air", "Citilink", "AirAsia Indonesia",
-  "Singapore Airlines", "Malaysia Airlines", "Thai Airways", "Cathay Pacific",
-  "Emirates", "Qatar Airways", "Turkish Airlines", "Lufthansa", "British Airways",
-];
+interface Maskapai {
+  kode_maskapai: string;
+  nama_maskapai: string;
+}
 
 export default function Register() {
   const navigate = useNavigate();
@@ -31,12 +32,25 @@ export default function Register() {
   const [phone, setPhone] = useState("");
   const [dob, setDob] = useState("");
   const [nationality, setNationality] = useState("");
-  const [airline, setAirline] = useState("");
+  const [kodeMaskapai, setKodeMaskapai] = useState("");
+  const [maskapaiList, setMaskapaiList] = useState<Maskapai[]>([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Fetch airline list from DB on mount
+  useEffect(() => {
+    supabase
+      .from("maskapai")
+      .select("kode_maskapai, nama_maskapai")
+      .order("nama_maskapai")
+      .then(({ data }) => {
+        if (data) setMaskapaiList(data);
+      });
+  }, []);
+
   const handleRegister = async () => {
-    if (!email || !password || !confirmPassword || !firstName || !lastName) {
+    if (!email || !password || !confirmPassword || !firstName || !lastName
+        || !countryCode || !phone || !dob || !nationality) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -44,15 +58,57 @@ export default function Register() {
       setError("Passwords do not match.");
       return;
     }
-    if (role === "staff" && !airline) {
+    if (role === "staff" && !kodeMaskapai) {
       setError("Please select an airline.");
       return;
     }
     setError("");
     setIsLoading(true);
-    await new Promise((res) => setTimeout(res, 900));
-    setIsLoading(false);
-    navigate("/");
+
+    try {
+      const hashed = await hashSHA256(password);
+
+      const { error: dbError } = await supabase.from("pengguna").insert([{
+        email,
+        password: hashed,
+        salutation,
+        first_mid_name: firstName,
+        last_name: lastName,
+        country_code: countryCode,
+        mobile_number: phone,
+        tanggal_lahir: dob,           
+        kewarganegaraan: nationality,
+      }]);
+      if (dbError) throw dbError;
+
+      if (role === "member") {
+        const today = new Date().toISOString().split("T")[0];
+        const { error: memberError } = await supabase.from("member").insert([{
+          email,
+          tanggal_bergabung: today,
+          id_tier: "T01",
+          award_miles: 0,
+          total_miles: 0,
+        }]);
+        if (memberError) throw memberError;
+      } else {
+        const { error: stafError } = await supabase.from("staf").insert([{
+          email,
+          kode_maskapai: kodeMaskapai,
+
+        }]);
+        if (stafError) throw stafError;
+      }
+
+      const { error: authError } = await supabase.auth.signUp({ email, password });
+      if (authError) throw authError;
+
+      navigate("/login");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Registration failed.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -106,7 +162,7 @@ export default function Register() {
 
           {/* Email */}
           <div style={s.fieldGroup}>
-            <label style={s.label}>Email</label>
+            <label style={s.label}>Email <span style={s.required}>*</span></label>
             <input style={s.input} type="email" placeholder="e.g. john.doe@email.com"
               value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" />
           </div>
@@ -114,12 +170,12 @@ export default function Register() {
           {/* Password row */}
           <div style={s.row}>
             <div style={s.fieldGroup}>
-              <label style={s.label}>Password</label>
+              <label style={s.label}>Password <span style={s.required}>*</span></label>
               <input style={s.input} type="password" placeholder="Min. 8 characters"
                 value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
             </div>
             <div style={s.fieldGroup}>
-              <label style={s.label}>Confirm Password</label>
+              <label style={s.label}>Confirm Password <span style={s.required}>*</span></label>
               <input style={s.input} type="password" placeholder="Re-enter password"
                 value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" />
             </div>
@@ -127,7 +183,7 @@ export default function Register() {
 
           {/* Salutations */}
           <div style={s.fieldGroup}>
-            <label style={s.label}>Salutations</label>
+            <label style={s.label}>Salutation <span style={s.required}>*</span></label>
             <div style={s.salutationGroup}>
               {(["Mr.", "Ms.", "Mrs."] as Salutation[]).map(sal => (
                 <button
@@ -145,12 +201,12 @@ export default function Register() {
           {/* Name row */}
           <div style={s.row}>
             <div style={s.fieldGroup}>
-              <label style={s.label}>First Name</label>
+              <label style={s.label}>First / Middle Name <span style={s.required}>*</span></label>
               <input style={s.input} type="text" placeholder="e.g. John"
                 value={firstName} onChange={e => setFirstName(e.target.value)} autoComplete="given-name" />
             </div>
             <div style={s.fieldGroup}>
-              <label style={s.label}>Last Name</label>
+              <label style={s.label}>Last Name <span style={s.required}>*</span></label>
               <input style={s.input} type="text" placeholder="e.g. Doe"
                 value={lastName} onChange={e => setLastName(e.target.value)} autoComplete="family-name" />
             </div>
@@ -159,12 +215,12 @@ export default function Register() {
           {/* Phone row */}
           <div style={s.row}>
             <div style={{ ...s.fieldGroup, flex: "0 0 110px" }}>
-              <label style={s.label}>Country Code</label>
+              <label style={s.label}>Country Code <span style={s.required}>*</span></label>
               <input style={s.input} type="text" placeholder="+62"
                 value={countryCode} onChange={e => setCountryCode(e.target.value)} autoComplete="tel-country-code" />
             </div>
             <div style={{ ...s.fieldGroup, flex: 1 }}>
-              <label style={s.label}>Phone Number</label>
+              <label style={s.label}>Phone Number <span style={s.required}>*</span></label>
               <input style={s.input} type="tel" placeholder="e.g. 812 3456 7890"
                 value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel-local" />
             </div>
@@ -173,17 +229,12 @@ export default function Register() {
           {/* DOB + Nationality */}
           <div style={s.row}>
             <div style={s.fieldGroup}>
-              <label style={s.label}>Tanggal Lahir</label>
-              <div style={s.dateWrapper}>
-                <svg style={s.calIcon} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9aa5c4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-                <input style={{ ...s.input, paddingLeft: "36px" }} type="text" placeholder="DD/MM/YYYY"
-                  value={dob} onChange={e => setDob(e.target.value)} />
-              </div>
+              <label style={s.label}>Tanggal Lahir <span style={s.required}>*</span></label>
+              <input style={s.input} type="date"
+                value={dob} onChange={e => setDob(e.target.value)} />
             </div>
             <div style={s.fieldGroup}>
-              <label style={s.label}>Kewarganegaraan</label>
+              <label style={s.label}>Kewarganegaraan <span style={s.required}>*</span></label>
               <div style={s.selectWrapper}>
                 <select style={s.select} value={nationality} onChange={e => setNationality(e.target.value)}>
                   <option value="">Pilih negara...</option>
@@ -194,14 +245,18 @@ export default function Register() {
             </div>
           </div>
 
-          {/* Staff-only: Pilih Maskapai */}
+          {/* Staff-only: Pilih Maskapai (fetched from DB) */}
           {role === "staff" && (
             <div style={{ ...s.fieldGroup, animation: "fadeUp 0.25s ease both" }}>
-              <label style={s.label}>Pilih Maskapai</label>
+              <label style={s.label}>Pilih Maskapai <span style={s.required}>*</span></label>
               <div style={s.selectWrapper}>
-                <select style={s.select} value={airline} onChange={e => setAirline(e.target.value)}>
+                <select style={s.select} value={kodeMaskapai} onChange={e => setKodeMaskapai(e.target.value)}>
                   <option value="">Pilih maskapai...</option>
-                  {AIRLINES.map(a => <option key={a} value={a}>{a}</option>)}
+                  {maskapaiList.map(m => (
+                    <option key={m.kode_maskapai} value={m.kode_maskapai}>
+                      {m.nama_maskapai}
+                    </option>
+                  ))}
                 </select>
                 <span style={s.selectArrow}>▾</span>
               </div>
@@ -339,6 +394,9 @@ const s: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     color: "#2d3a5e",
   },
+  required: {
+    color: "#e05252",
+  },
   input: {
     padding: "11px 14px",
     borderRadius: "10px",
@@ -376,16 +434,6 @@ const s: Record<string, React.CSSProperties> = {
   salBtnActive: {
     background: "#5b80e8",
     color: "#fff",
-  },
-
-  /* Date input */
-  dateWrapper: { position: "relative" },
-  calIcon: {
-    position: "absolute",
-    left: "12px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    pointerEvents: "none",
   },
 
   /* Select */
