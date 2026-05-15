@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '@components/Fitur.css';
+import { supabase } from '@/supabase';
 
 // Types
 
@@ -338,8 +339,12 @@ function ConfirmDeleteModal({ onConfirm, onClose }: { onConfirm: () => void; onC
 type FilterStatus = 'Semua' | StatusKlaim;
 
 export default function ClaimMissingMiles({ emailMember = 'user1@mail.com' }: ClaimMissingMilesProps) {
+  const session = JSON.parse(sessionStorage.getItem('aeromiles_user') ?? '{}');
+  const resolvedEmail = emailMember ?? session.email ?? '';
+
   const [klaims, setKlaims] = useState<Klaim[]>(MOCK_KLAIM);
   const [filter, setFilter] = useState<FilterStatus>('Semua');
+  const [loading, setLoading] = useState(true);
 
   const [showTambah, setShowTambah] = useState(false);
   const [editTarget, setEditTarget] = useState<Klaim | null>(null);
@@ -352,34 +357,74 @@ export default function ClaimMissingMiles({ emailMember = 'user1@mail.com' }: Cl
 
   // Handlers
 
-  const handleTambah = (data: FormState) => {
-    const newKlaim: Klaim = {
-      id: Date.now(),
-      nomor_klaim: nextNomorKlaim(klaims),
-      email_member: emailMember,
-      ...data,
-      status_penerimaan: 'Menunggu',
-      timestamp: nowTimestamp(),
-    };
-    // TODO: POST /api/claim-missing-miles
-    setKlaims(prev => [...prev, newKlaim]);
+  const fetchKlaims = async () => {
+    if (!resolvedEmail) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('claim_missing_miles')
+      .select('*')
+      .eq('email_member', resolvedEmail)
+      .order('timestamp', { ascending: false });
+ 
+    if (error) { console.error('fetchKlaims:', error.message); }
+    else {
+      setKlaims((data ?? []).map((row: any) => ({
+        id: row.id,
+        nomor_klaim: `CLM-${String(row.id).padStart(3, '0')}`,
+        email_member: row.email_member,
+        maskapai: row.maskapai,
+        bandara_asal: row.bandara_asal,
+        bandara_tujuan: row.bandara_tujuan,
+        tanggal_penerbangan: row.tanggal_penerbangan,
+        flight_number: row.flight_number,
+        nomor_tiket: row.nomor_tiket,
+        kelas_kabin: row.kelas_kabin,
+        pnr: row.pnr,
+        status_penerimaan: row.status_penerimaan as StatusKlaim,
+        timestamp: row.timestamp,
+      })));
+    }
+    setLoading(false);
+  };
+ 
+  useEffect(() => { fetchKlaims(); }, [resolvedEmail]);
+
+  const handleTambah = async (form: FormState) => {
+    const { error } = await supabase.from('claim_missing_miles').insert({
+      email_member: resolvedEmail, maskapai: form.maskapai,
+      bandara_asal: form.bandara_asal, bandara_tujuan: form.bandara_tujuan,
+      tanggal_penerbangan: form.tanggal_penerbangan, flight_number: form.flight_number,
+      nomor_tiket: form.nomor_tiket, kelas_kabin: form.kelas_kabin,
+      pnr: form.pnr, status_penerimaan: 'Menunggu', timestamp: nowTimestamp(),
+    });
+    if (error) { alert('Gagal mengajukan klaim: ' + (error.message.includes('unique') ? 'Klaim duplikat.' : error.message)); return; }
     setShowTambah(false);
+    fetchKlaims();
   };
-
-  const handleEdit = (data: FormState) => {
+ 
+  const handleEdit = async (form: FormState) => {
     if (!editTarget) return;
-    setKlaims(prev => prev.map(k =>
-      k.id === editTarget.id ? { ...k, ...data } : k
-    ));
-    // TODO: PUT /api/claim-missing-miles/:id
+    const { error } = await supabase.from('claim_missing_miles')
+      .update({
+        maskapai: form.maskapai, bandara_asal: form.bandara_asal,
+        bandara_tujuan: form.bandara_tujuan, tanggal_penerbangan: form.tanggal_penerbangan,
+        flight_number: form.flight_number, nomor_tiket: form.nomor_tiket,
+        kelas_kabin: form.kelas_kabin, pnr: form.pnr,
+      })
+      .eq('id', editTarget.id)
+      .eq('status_penerimaan', 'Menunggu');
+    if (error) { alert('Gagal menyimpan perubahan: ' + error.message); return; }
     setEditTarget(null);
+    fetchKlaims();
   };
-
-  const handleDelete = () => {
+ 
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setKlaims(prev => prev.filter(k => k.id !== deleteTarget.id));
-    // TODO: DELETE /api/claim-missing-miles/:id
+    const { error } = await supabase.from('claim_missing_miles')
+      .delete().eq('id', deleteTarget.id).eq('status_penerimaan', 'Menunggu');
+    if (error) { alert('Gagal membatalkan klaim: ' + error.message); return; }
     setDeleteTarget(null);
+    fetchKlaims();
   };
 
   const filterTabs: FilterStatus[] = ['Semua', 'Menunggu', 'Disetujui', 'Ditolak'];
