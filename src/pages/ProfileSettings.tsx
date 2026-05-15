@@ -88,10 +88,10 @@ function PasswordModal({ onClose, email }: { onClose: () => void, email: string 
 
       const hashedNew = await hashSHA256(fields.passwordBaru);
 
-      const { error: updateError } = await supabase
-        .from('pengguna')
-        .update({ password: hashedNew })
-        .eq('email', email);
+      const { error: updateError } = await supabase.rpc('update_password_rpc', {
+        p_email: email,
+        p_new_password: hashedNew
+      });
       if (updateError) throw updateError;
 
       await supabase.auth.updateUser({ password: fields.passwordBaru });
@@ -222,27 +222,20 @@ export default function ProfileSettings({ role, email }: ProfileSettingsProps) {
     try {
       const first_mid_name = [formData.first_name, formData.middle_name].filter(Boolean).join(' ');
 
-      const { error: penggunaErr } = await supabase
-        .from('pengguna')
-        .update({
-          salutation: formData.salutation,
-          first_mid_name: first_mid_name,
-          last_name: formData.last_name,
-          country_code: formData.country_code,
-          mobile_number: formData.mobile_number,
-          tanggal_lahir: formData.tanggal_lahir,
-          kewarganegaraan: formData.kewarganegaraan
-        })
-        .eq('email', email);
-      if (penggunaErr) throw penggunaErr;
+      const { error: rpcErr } = await supabase.rpc('update_profil_rpc', {
+        p_email: email,
+        p_salutation: formData.salutation,
+        p_first_mid_name: first_mid_name,
+        p_last_name: formData.last_name,
+        p_country_code: formData.country_code,
+        p_mobile_number: formData.mobile_number,
+        p_tanggal_lahir: formData.tanggal_lahir,
+        p_kewarganegaraan: formData.kewarganegaraan,
+        p_role: role,
+        p_kode_maskapai: role === 'staf' ? (formData as StafData).kode_maskapai : null
+      });
 
-      if (role === 'staf') {
-        const { error: stafErr } = await supabase
-          .from('staf')
-          .update({ kode_maskapai: (formData as StafData).kode_maskapai })
-          .eq('email', email);
-        if (stafErr) throw stafErr;
-      }
+      if (rpcErr) throw rpcErr;
 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);

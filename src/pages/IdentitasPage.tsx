@@ -21,7 +21,7 @@ interface Identitas {
 const IdentitasPage: React.FC<IdentitasPageProps> = () => {
   const [identitasList, setIdentitasList] = useState<Identitas[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -42,13 +42,13 @@ const IdentitasPage: React.FC<IdentitasPageProps> = () => {
   const fetchIdentitas = async () => {
     if (!userEmail) return;
     setLoading(true);
-    const { data, error: dbError } = await supabase
-      .from('identitas')
-      .select('*')
-      .eq('email_member', userEmail);
+    const { data, error } = await supabase.rpc('get_identitas_list', { p_email: userEmail });
     
-    if (dbError) setError(dbError.message);
-    else setIdentitasList(data || []);
+    if (error) {
+      console.error(error);
+    } else {
+      setIdentitasList(data || []);
+    }
     setLoading(false);
   };
 
@@ -67,16 +67,22 @@ const IdentitasPage: React.FC<IdentitasPageProps> = () => {
   const closeAddModal = () => setIsAddModalOpen(false);
 
   const handleAdd = async () => {
-    const { error: insertError } = await supabase.from('identitas').insert([{
-      ...formData,
-      email_member: userEmail
-    }]);
+    setFeedback(null);
+    const { data, error } = await supabase.rpc('add_identitas', {
+      p_nomor: formData.nomor,
+      p_email: userEmail,
+      p_tanggal_habis: formData.tanggal_habis,
+      p_tanggal_terbit: formData.tanggal_terbit,
+      p_negara_penerbit: formData.negara_penerbit,
+      p_jenis: formData.jenis
+    });
     
-    if (!insertError) {
+    if (error) {
+      setFeedback({ type: 'error', text: error.message });
+    } else {
+      setFeedback({ type: 'success', text: data });
       fetchIdentitas();
       closeAddModal();
-    } else {
-      alert(insertError.message);
     }
   };
 
@@ -94,22 +100,22 @@ const IdentitasPage: React.FC<IdentitasPageProps> = () => {
   const closeEditModal = () => setIsEditModalOpen(false);
 
   const handleEdit = async () => {
-    const { error: updateError } = await supabase
-      .from('identitas')
-      .update({
-        jenis: formData.jenis,
-        negara_penerbit: formData.negara_penerbit,
-        tanggal_terbit: formData.tanggal_terbit,
-        tanggal_habis: formData.tanggal_habis
-      })
-      .eq('nomor', selectedNomor)
-      .eq('email_member', userEmail);
+    setFeedback(null);
+    const { data, error } = await supabase.rpc('update_identitas', {
+      p_nomor: selectedNomor,
+      p_email: userEmail,
+      p_tanggal_habis: formData.tanggal_habis,
+      p_tanggal_terbit: formData.tanggal_terbit,
+      p_negara_penerbit: formData.negara_penerbit,
+      p_jenis: formData.jenis
+    });
       
-    if (!updateError) {
+    if (error) {
+      setFeedback({ type: 'error', text: error.message });
+    } else {
+      setFeedback({ type: 'success', text: data });
       fetchIdentitas();
       closeEditModal();
-    } else {
-      alert(updateError.message);
     }
   };
 
@@ -120,17 +126,18 @@ const IdentitasPage: React.FC<IdentitasPageProps> = () => {
   const closeDeleteModal = () => setIsDeleteModalOpen(false);
 
   const handleDelete = async () => {
-    const { error: deleteError } = await supabase
-      .from('identitas')
-      .delete()
-      .eq('nomor', selectedNomor)
-      .eq('email_member', userEmail);
+    setFeedback(null);
+    const { data, error } = await supabase.rpc('delete_identitas', {
+      p_nomor: selectedNomor,
+      p_email: userEmail
+    });
       
-    if (!deleteError) {
+    if (error) {
+      setFeedback({ type: 'error', text: error.message });
+    } else {
+      setFeedback({ type: 'success', text: data });
       fetchIdentitas();
       closeDeleteModal();
-    } else {
-      alert(deleteError.message);
     }
   };
 
@@ -143,6 +150,25 @@ const IdentitasPage: React.FC<IdentitasPageProps> = () => {
   return (
     <div className="identitas-wrapper">
       <div className="identitas-page">
+
+        {/* Feedback Banner */}
+        {feedback && (
+          <div style={{
+            padding: '12px 16px',
+            marginBottom: '16px',
+            borderRadius: '8px',
+            backgroundColor: feedback.type === 'success' ? '#dcfce7' : '#fee2e2',
+            color: feedback.type === 'success' ? '#166534' : '#991b1b',
+            border: `1px solid ${feedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <span style={{ fontWeight: 600, fontSize: 14 }}>{feedback.text}</span>
+            <button onClick={() => setFeedback(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'inherit', opacity: 0.7 }}>×</button>
+          </div>
+        )}
+
         <div className="identitas-header">
           <h1>Identitas Saya</h1>
           <button className="btn-add-identitas" onClick={openAddModal}>
@@ -152,7 +178,7 @@ const IdentitasPage: React.FC<IdentitasPageProps> = () => {
         </div>
 
         <div className="identitas-card">
-          {loading ? <p>Loading data...</p> : (
+          {loading ? <p style={{padding: '20px'}}>Loading data...</p> : (
             <table className="identitas-table">
               <thead>
                 <tr>
@@ -167,15 +193,15 @@ const IdentitasPage: React.FC<IdentitasPageProps> = () => {
               </thead>
               <tbody>
                 {identitasList.length === 0 ? (
-                  <tr><td colSpan={7} style={{textAlign: 'center'}}>Belum ada identitas.</td></tr>
+                  <tr><td colSpan={7} style={{textAlign: 'center', padding: '20px'}}>Belum ada identitas.</td></tr>
                 ) : (
                   identitasList.map((item) => (
                     <tr key={item.nomor}>
                       <td className="font-medium text-black">{item.nomor}</td>
                       <td className="text-black">{item.jenis}</td>
                       <td className="text-black">{item.negara_penerbit}</td>
-                      <td className="text-black">{item.tanggal_terbit}</td>
-                      <td className="text-black">{item.tanggal_habis}</td>
+                      <td className="text-black">{String(item.tanggal_terbit)}</td>
+                      <td className="text-black">{String(item.tanggal_habis)}</td>
                       <td>
                         <span className={`status-badge ${getStatus(item.tanggal_habis) === 'Aktif' ? 'status-aktif' : 'status-kadaluarsa'}`}>
                           {getStatus(item.tanggal_habis)}
@@ -192,7 +218,6 @@ const IdentitasPage: React.FC<IdentitasPageProps> = () => {
             </table>
           )}
         </div>
-        {error && <p style={{color: 'red', marginTop: '10px'}}>{error}</p>}
       </div>
 
       {/* MODAL TAMBAH */}
@@ -306,13 +331,13 @@ const IdentitasPage: React.FC<IdentitasPageProps> = () => {
               <button className="btn-close" onClick={closeDeleteModal}>✕</button>
             </div>
             
-            <div className="confirmation-text">
+            <div className="confirmation-text" style={{ padding: '20px 0' }}>
               Apakah Anda yakin ingin menghapus identitas <b>{selectedNomor}</b>? Tindakan ini tidak dapat dibatalkan.
             </div>
 
             <div className="modal-actions-right">
-              <button className="btn-batal" onClick={closeDeleteModal}>Batal</button>
-              <button className="btn-hapus" onClick={handleDelete}>Hapus</button>
+              <button className="btn-batal" onClick={closeDeleteModal} style={{ marginRight: '10px', background: 'transparent', border: '1px solid #ccc', padding: '10px 20px', borderRadius: '8px' }}>Batal</button>
+              <button className="btn-hapus" onClick={handleDelete} style={{ background: '#e11d48', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px' }}>Hapus</button>
             </div>
           </div>
         </div>

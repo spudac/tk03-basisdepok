@@ -32,14 +32,11 @@ export default function PurchasePage({ member }: PurchasePageProps) {
     if (error) {
       alert('Gagal memproses pembelian: ' + error.message);
     } else {
-      // 1. Simpen ID-nya dulu biar aman
       const purchasedId = selectedPkg.id_package;
       
-      // 2. Tutup modal & bersihin data paket sekarang juga
       setIsModalOpen(false);
       setSelectedPkg(null);
 
-      // 3. Kasih jeda sekejap (100 milidetik) biar modalnya ilang dulu, baru panggil alert
       setTimeout(() => {
         alert(`SUKSES: Pembelian package "${purchasedId}" berhasil diproses!`);
       }, 100);

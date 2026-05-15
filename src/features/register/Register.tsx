@@ -34,79 +34,74 @@ export default function Register() {
   const [nationality, setNationality] = useState("");
   const [kodeMaskapai, setKodeMaskapai] = useState("");
   const [maskapaiList, setMaskapaiList] = useState<Maskapai[]>([]);
-  const [error, setError] = useState("");
+  
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch airline list from DB on mount
+  // Use RPC for maskapai list
   useEffect(() => {
-    supabase
-      .from("maskapai")
-      .select("kode_maskapai, nama_maskapai")
-      .order("nama_maskapai")
-      .then(({ data }) => {
-        if (data) setMaskapaiList(data);
-      });
+    supabase.rpc("get_maskapai_list").then(({ data }) => {
+      if (data) setMaskapaiList(data);
+    });
   }, []);
 
   const handleRegister = async () => {
+    setFeedback(null);
+
     if (!email || !password || !confirmPassword || !firstName || !lastName
         || !countryCode || !phone || !dob || !nationality) {
-      setError("Please fill in all required fields.");
+      setFeedback({ type: 'error', text: "Please fill in all required fields." });
       return;
     }
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setFeedback({ type: 'error', text: "Passwords do not match." });
       return;
     }
     if (role === "staff" && !kodeMaskapai) {
-      setError("Please select an airline.");
+      setFeedback({ type: 'error', text: "Please select an airline." });
       return;
     }
-    setError("");
+    
     setIsLoading(true);
 
     try {
       const hashed = await hashSHA256(password);
 
-      const { error: dbError } = await supabase.from("pengguna").insert([{
-        email,
-        password: hashed,
-        salutation,
-        first_mid_name: firstName,
-        last_name: lastName,
-        country_code: countryCode,
-        mobile_number: phone,
-        tanggal_lahir: dob,           
-        kewarganegaraan: nationality,
-      }]);
-      if (dbError) throw dbError;
+      // Call custom insert RPC
+      const { data: rpcData, error: rpcError } = await supabase.rpc("insert_user_data", {
+        p_role: role,
+        p_email: email,
+        p_password: hashed,
+        p_salutation: salutation,
+        p_first_mid_name: firstName,
+        p_last_name: lastName,
+        p_country_code: countryCode,
+        p_mobile_number: phone,
+        p_tanggal_lahir: dob,
+        p_kewarganegaraan: nationality,
+        p_kode_maskapai: role === "staff" ? kodeMaskapai : null
+      });
 
-      if (role === "member") {
-        const today = new Date().toISOString().split("T")[0];
-        const { error: memberError } = await supabase.from("member").insert([{
-          email,
-          tanggal_bergabung: today,
-          id_tier: "T01",
-          award_miles: 0,
-          total_miles: 0,
-        }]);
-        if (memberError) throw memberError;
-      } else {
-        const { error: stafError } = await supabase.from("staf").insert([{
-          email,
-          kode_maskapai: kodeMaskapai,
-
-        }]);
-        if (stafError) throw stafError;
+      if (rpcError) {
+        setFeedback({ type: 'error', text: rpcError.message });
+        setIsLoading(false);
+        return;
       }
 
       const { error: authError } = await supabase.auth.signUp({ email, password });
-      if (authError) throw authError;
+      
+      if (authError) {
+        setFeedback({ type: 'error', text: authError.message });
+        setIsLoading(false);
+        return;
+      }
 
-      navigate("/login");
+      setFeedback({ type: 'success', text: rpcData || "Account created successfully." });
+      
+      setTimeout(() => navigate("/login"), 2000);
+      
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Registration failed.");
-    } finally {
+      setFeedback({ type: 'error', text: err instanceof Error ? err.message : "Registration failed." });
       setIsLoading(false);
     }
   };
@@ -142,19 +137,38 @@ export default function Register() {
             <p style={s.subtitle}>Choose your role and fill out the form</p>
           </div>
 
+          {/* Feedback Banner */}
+          {feedback && (
+            <div style={{
+              padding: '12px 16px',
+              borderRadius: '8px',
+              backgroundColor: feedback.type === 'success' ? '#dcfce7' : '#fee2e2',
+              color: feedback.type === 'success' ? '#166534' : '#991b1b',
+              border: `1px solid ${feedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span>{feedback.text}</span>
+              <button onClick={() => setFeedback(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'inherit', opacity: 0.7 }}>×</button>
+            </div>
+          )}
+
           {/* Role toggle */}
           <div style={s.roleToggle}>
             <button
               type="button"
               style={{ ...s.roleBtn, ...(role === "member" ? s.roleBtnActive : {}) }}
-              onClick={() => setRole("member")}
+              onClick={() => { setRole("member"); setFeedback(null); }}
             >
               Member
             </button>
             <button
               type="button"
               style={{ ...s.roleBtn, ...(role === "staff" ? s.roleBtnActive : {}) }}
-              onClick={() => setRole("staff")}
+              onClick={() => { setRole("staff"); setFeedback(null); }}
             >
               Staff
             </button>
@@ -164,7 +178,7 @@ export default function Register() {
           <div style={s.fieldGroup}>
             <label style={s.label}>Email <span style={s.required}>*</span></label>
             <input style={s.input} type="email" placeholder="e.g. john.doe@email.com"
-              value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" />
+              value={email} onChange={e => { setEmail(e.target.value); setFeedback(null); }} autoComplete="email" />
           </div>
 
           {/* Password row */}
@@ -172,12 +186,12 @@ export default function Register() {
             <div style={s.fieldGroup}>
               <label style={s.label}>Password <span style={s.required}>*</span></label>
               <input style={s.input} type="password" placeholder="Min. 8 characters"
-                value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
+                value={password} onChange={e => { setPassword(e.target.value); setFeedback(null); }} autoComplete="new-password" />
             </div>
             <div style={s.fieldGroup}>
               <label style={s.label}>Confirm Password <span style={s.required}>*</span></label>
               <input style={s.input} type="password" placeholder="Re-enter password"
-                value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+                value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); setFeedback(null); }} autoComplete="new-password" />
             </div>
           </div>
 
@@ -203,12 +217,12 @@ export default function Register() {
             <div style={s.fieldGroup}>
               <label style={s.label}>First / Middle Name <span style={s.required}>*</span></label>
               <input style={s.input} type="text" placeholder="e.g. John"
-                value={firstName} onChange={e => setFirstName(e.target.value)} autoComplete="given-name" />
+                value={firstName} onChange={e => { setFirstName(e.target.value); setFeedback(null); }} autoComplete="given-name" />
             </div>
             <div style={s.fieldGroup}>
               <label style={s.label}>Last Name <span style={s.required}>*</span></label>
               <input style={s.input} type="text" placeholder="e.g. Doe"
-                value={lastName} onChange={e => setLastName(e.target.value)} autoComplete="family-name" />
+                value={lastName} onChange={e => { setLastName(e.target.value); setFeedback(null); }} autoComplete="family-name" />
             </div>
           </div>
 
@@ -217,12 +231,12 @@ export default function Register() {
             <div style={{ ...s.fieldGroup, flex: "0 0 110px" }}>
               <label style={s.label}>Country Code <span style={s.required}>*</span></label>
               <input style={s.input} type="text" placeholder="+62"
-                value={countryCode} onChange={e => setCountryCode(e.target.value)} autoComplete="tel-country-code" />
+                value={countryCode} onChange={e => { setCountryCode(e.target.value); setFeedback(null); }} autoComplete="tel-country-code" />
             </div>
             <div style={{ ...s.fieldGroup, flex: 1 }}>
               <label style={s.label}>Phone Number <span style={s.required}>*</span></label>
               <input style={s.input} type="tel" placeholder="e.g. 812 3456 7890"
-                value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel-local" />
+                value={phone} onChange={e => { setPhone(e.target.value); setFeedback(null); }} autoComplete="tel-local" />
             </div>
           </div>
 
@@ -231,12 +245,12 @@ export default function Register() {
             <div style={s.fieldGroup}>
               <label style={s.label}>Tanggal Lahir <span style={s.required}>*</span></label>
               <input style={s.input} type="date"
-                value={dob} onChange={e => setDob(e.target.value)} />
+                value={dob} onChange={e => { setDob(e.target.value); setFeedback(null); }} />
             </div>
             <div style={s.fieldGroup}>
               <label style={s.label}>Kewarganegaraan <span style={s.required}>*</span></label>
               <div style={s.selectWrapper}>
-                <select style={s.select} value={nationality} onChange={e => setNationality(e.target.value)}>
+                <select style={s.select} value={nationality} onChange={e => { setNationality(e.target.value); setFeedback(null); }}>
                   <option value="">Pilih negara...</option>
                   {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -250,7 +264,7 @@ export default function Register() {
             <div style={{ ...s.fieldGroup, animation: "fadeUp 0.25s ease both" }}>
               <label style={s.label}>Pilih Maskapai <span style={s.required}>*</span></label>
               <div style={s.selectWrapper}>
-                <select style={s.select} value={kodeMaskapai} onChange={e => setKodeMaskapai(e.target.value)}>
+                <select style={s.select} value={kodeMaskapai} onChange={e => { setKodeMaskapai(e.target.value); setFeedback(null); }}>
                   <option value="">Pilih maskapai...</option>
                   {maskapaiList.map(m => (
                     <option key={m.kode_maskapai} value={m.kode_maskapai}>
@@ -262,9 +276,6 @@ export default function Register() {
               </div>
             </div>
           )}
-
-          {/* Error */}
-          {error && <p style={s.error}>{error}</p>}
 
           {/* Buttons */}
           <div style={s.btnRow}>
@@ -299,8 +310,6 @@ const s: Record<string, React.CSSProperties> = {
     fontFamily: "'Nunito', sans-serif",
     background: "#fff",
   },
-
-  /* Left scrollable panel */
   formPanel: {
     flex: "0 0 52%",
     overflowY: "auto",
@@ -319,8 +328,6 @@ const s: Record<string, React.CSSProperties> = {
     width: "100%",
     maxWidth: "420px",
   },
-
-  /* Logo */
   logoRow: {
     display: "flex",
     alignItems: "center",
@@ -336,8 +343,6 @@ const s: Record<string, React.CSSProperties> = {
   },
   logoAero: { color: "#1e2a52" },
   logoMiles: { color: "#5b80e8" },
-
-  /* Heading */
   heading: { marginBottom: "2px" },
   title: {
     fontSize: "1.6rem",
@@ -351,8 +356,6 @@ const s: Record<string, React.CSSProperties> = {
     color: "#8892b0",
     margin: "4px 0 0",
   },
-
-  /* Role toggle */
   roleToggle: {
     display: "flex",
     border: "1.5px solid #d4daf0",
@@ -376,8 +379,6 @@ const s: Record<string, React.CSSProperties> = {
     color: "#fff",
     borderRadius: "10px",
   },
-
-  /* Fields */
   fieldGroup: {
     display: "flex",
     flexDirection: "column",
@@ -410,8 +411,6 @@ const s: Record<string, React.CSSProperties> = {
     fontFamily: "'Nunito', sans-serif",
     transition: "border-color 0.18s",
   },
-
-  /* Salutation */
   salutationGroup: {
     display: "flex",
     border: "1.5px solid #dde3f4",
@@ -435,8 +434,6 @@ const s: Record<string, React.CSSProperties> = {
     background: "#5b80e8",
     color: "#fff",
   },
-
-  /* Select */
   selectWrapper: { position: "relative" },
   select: {
     padding: "11px 36px 11px 14px",
@@ -462,16 +459,6 @@ const s: Record<string, React.CSSProperties> = {
     color: "#9aa5c4",
     fontSize: "0.85rem",
   },
-
-  /* Error */
-  error: {
-    color: "#e05252",
-    fontSize: "0.82rem",
-    margin: 0,
-    textAlign: "center",
-  },
-
-  /* Bottom buttons */
   btnRow: {
     display: "flex",
     gap: "14px",
@@ -508,8 +495,6 @@ const s: Record<string, React.CSSProperties> = {
     opacity: 0.7,
     cursor: "not-allowed",
   },
-
-  /* Right photo panel */
   photoPanel: {
     flex: "0 0 48%",
     position: "sticky" as const,
