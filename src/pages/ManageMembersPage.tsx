@@ -42,6 +42,8 @@ const ManageMembersPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [editForm, setEditForm] = useState({
@@ -61,33 +63,32 @@ const ManageMembersPage: React.FC = () => {
 
   const fetchMembers = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('member')
-      .select(`
-        nomor_member,
-        tanggal_bergabung,
-        award_miles,
-        total_miles,
-        pengguna (
-          email,
-          salutation,
-          first_mid_name,
-          last_name,
-          country_code,
-          mobile_number,
-          tanggal_lahir,
-          kewarganegaraan
-        ),
-        tier (
-          nama
-        )
-      `)
-      .order('nomor_member');
+    const { data, error } = await supabase.rpc('get_all_members_admin');
 
     if (error) {
       console.error('Error fetching members:', error);
+      setFeedback({ type: 'error', text: error.message });
     } else {
-      setMembers(data as unknown as Member[]);
+      const mapped: Member[] = (data || []).map((row: any) => ({
+        nomor_member: row.nomor_member,
+        tanggal_bergabung: row.tanggal_bergabung,
+        award_miles: row.award_miles,
+        total_miles: row.total_miles,
+        pengguna: {
+          email: row.email,
+          salutation: row.salutation,
+          first_mid_name: row.first_mid_name,
+          last_name: row.last_name,
+          country_code: row.country_code,
+          mobile_number: row.mobile_number,
+          tanggal_lahir: row.tanggal_lahir,
+          kewarganegaraan: row.kewarganegaraan
+        },
+        tier: {
+          nama: row.tier_nama
+        }
+      }));
+      setMembers(mapped);
     }
     setLoading(false);
   };
@@ -114,43 +115,69 @@ const ManageMembersPage: React.FC = () => {
 
   const handleUpdate = async () => {
     if (!editingMember) return;
+    setFeedback(null);
     const targetEmail = editingMember.pengguna.email;
 
-    const { error: errPengguna } = await supabase
-      .from('pengguna')
-      .update({
-        salutation: editForm.salutation,
-        first_mid_name: editForm.first_mid_name,
-        last_name: editForm.last_name,
-        kewarganegaraan: editForm.kewarganegaraan,
-        country_code: editForm.country_code,
-        mobile_number: editForm.mobile_number,
-        tanggal_lahir: editForm.tanggal_lahir
-      })
-      .eq('email', targetEmail);
+    const { data, error } = await supabase.rpc('update_member_admin', {
+      p_email: targetEmail,
+      p_salutation: editForm.salutation,
+      p_first_mid_name: editForm.first_mid_name,
+      p_last_name: editForm.last_name,
+      p_kewarganegaraan: editForm.kewarganegaraan,
+      p_country_code: editForm.country_code,
+      p_mobile_number: editForm.mobile_number,
+      p_tanggal_lahir: editForm.tanggal_lahir,
+      p_id_tier: editForm.id_tier
+    });
 
-    if (errPengguna) {
-      console.error('Error update pengguna:', errPengguna);
-      return;
+    if (error) {
+      setFeedback({ type: 'error', text: error.message });
+    } else {
+      setFeedback({ type: 'success', text: data });
+      fetchMembers();
     }
-
-    const { error: errMember } = await supabase
-      .from('member')
-      .update({ id_tier: editForm.id_tier })
-      .eq('email', targetEmail);
-
-    if (errMember) {
-      console.error('Error update member:', errMember);
-      return;
-    }
-
     setIsEditModalOpen(false);
-    fetchMembers();
+  };
+
+  const handleDelete = async () => {
+    if (!selectedEmail) return;
+    setFeedback(null);
+
+    const { data, error } = await supabase.rpc('delete_member_admin', {
+      p_email: selectedEmail
+    });
+
+    if (error) {
+      setFeedback({ type: 'error', text: error.message });
+    } else {
+      setFeedback({ type: 'success', text: data });
+      fetchMembers();
+    }
+    setIsDeleteModalOpen(false);
   };
 
   return (
     <div className="manage-members-wrapper">
       <div className="manage-members-page">
+
+        {/* Feedback Banner */}
+        {feedback && (
+          <div style={{
+            padding: '12px 16px',
+            marginBottom: '16px',
+            borderRadius: '8px',
+            backgroundColor: feedback.type === 'success' ? '#dcfce7' : '#fee2e2',
+            color: feedback.type === 'success' ? '#166534' : '#991b1b',
+            border: `1px solid ${feedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <span style={{ fontWeight: 600, fontSize: 14 }}>{feedback.text}</span>
+            <button onClick={() => setFeedback(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'inherit', opacity: 0.7 }}>×</button>
+          </div>
+        )}
+
         <div className="mm-header-section">
           <div className="mm-title-row">
             <h1>Kelola Member</h1>
@@ -187,7 +214,9 @@ const ManageMembersPage: React.FC = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8}>Loading...</td></tr>
+                <tr><td colSpan={8} style={{textAlign: 'center', padding: '20px'}}>Loading...</td></tr>
+              ) : members.length === 0 ? (
+                <tr><td colSpan={8} style={{textAlign: 'center', padding: '20px'}}>Belum ada member.</td></tr>
               ) : members.map((m, i) => (
                 <tr key={i}>
                   <td className="text-black font-medium">{m.nomor_member}</td>
@@ -216,7 +245,7 @@ const ManageMembersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL TAMBAH (Unchanged for brevity) */}
+      {/* MODAL TAMBAH */}
       {isAddModalOpen && (
         <div className="modal-overlay" onClick={() => setIsAddModalOpen(false)}>
           <div className="mm-modal-box" onClick={(e) => e.stopPropagation()}>
@@ -343,10 +372,7 @@ const ManageMembersPage: React.FC = () => {
 
             <div className="modal-actions-right" style={{gap: '12px'}}>
               <button className="btn-batal" onClick={() => setIsDeleteModalOpen(false)}>Batal</button>
-              <button className="btn-hapus" onClick={() => {
-                // Delete logic here
-                setIsDeleteModalOpen(false);
-              }}>Hapus</button>
+              <button className="btn-hapus" onClick={handleDelete}>Hapus</button>
             </div>
           </div>
         </div>
