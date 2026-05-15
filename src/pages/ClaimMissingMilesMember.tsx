@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '@components/Fitur.css';
+import { supabase } from '../supabase';
 
 // Types
 
@@ -7,7 +8,6 @@ type StatusKlaim = 'Menunggu' | 'Disetujui' | 'Ditolak';
 
 interface Klaim {
   id: number;
-  nomor_klaim: string;      
   email_member: string;
   maskapai: string;         
   bandara_asal: string; 
@@ -58,62 +58,11 @@ const BANDARA_OPTIONS = [
 
 const KELAS_KABIN_OPTIONS = ['Economy', 'Premium Economy', 'Business', 'First'];
 
-// Mock Data
-
-const MOCK_KLAIM: Klaim[] = [
-  {
-    id: 1,
-    nomor_klaim: 'CLM-001',
-    email_member: 'user1@mail.com',
-    maskapai: 'GA',
-    bandara_asal: 'CGK',
-    bandara_tujuan: 'DPS',
-    tanggal_penerbangan: '2024-10-01',
-    flight_number: 'GA404',
-    nomor_tiket: '126001',
-    kelas_kabin: 'Business',
-    pnr: 'ABC123',
-    status_penerimaan: 'Disetujui',
-    timestamp: '2024-10-05 18:45:00',
-  },
-  {
-    id: 2,
-    nomor_klaim: 'CLM-002',
-    email_member: 'user1@mail.com',
-    maskapai: 'SQ',
-    bandara_asal: 'SIN',
-    bandara_tujuan: 'HND',
-    tanggal_penerbangan: '2024-11-15',
-    flight_number: 'SQ12',
-    nomor_tiket: 'TKT-002',
-    kelas_kabin: 'Economy',
-    pnr: 'DEF456',
-    status_penerimaan: 'Menunggu',
-    timestamp: '2024-11-20 18:45:00',
-  },
-];
-
 // Helpers
-
-function labelBandara(iata: string) {
-  const b = BANDARA_OPTIONS.find(x => x.iata === iata);
-  return b ? `${iata} - ${b.nama}, ${b.kota}` : iata;
-}
 
 function labelBandaraShort(iata: string) {
   const b = BANDARA_OPTIONS.find(x => x.iata === iata);
   return b ? `${iata}` : iata;
-}
-
-function labelMaskapai(kode: string) {
-  const m = MASKAPAI_OPTIONS.find(x => x.kode === kode);
-  return m ? `${kode} - ${m.nama}` : kode;
-}
-
-function nextNomorKlaim(list: Klaim[]) {
-  const nums = list.map(k => parseInt(k.nomor_klaim.replace('CLM-', ''), 10));
-  const max = nums.length ? Math.max(...nums) : 0;
-  return `CLM-${String(max + 1).padStart(3, '0')}`;
 }
 
 function nowTimestamp() {
@@ -171,13 +120,11 @@ const EMPTY_FORM: FormState = {
 function KlaimFormModal({
   mode,
   initialValues,
-  existingKlaims,
   onSubmit,
   onClose,
 }: {
   mode: 'tambah' | 'edit';
   initialValues: FormState;
-  existingKlaims: Klaim[];
   onSubmit: (data: FormState) => void;
   onClose: () => void;
 }) {
@@ -195,19 +142,8 @@ function KlaimFormModal({
     if (!form.pnr.trim()) { setError('PNR wajib diisi.'); return; }
     if (form.bandara_asal === form.bandara_tujuan) { setError('Bandara asal dan tujuan tidak boleh sama.'); return; }
 
-    // Cek duplikat
-    if (mode === 'tambah') {
-      const duplikat = existingKlaims.find(
-        k => k.flight_number === form.flight_number &&
-             k.tanggal_penerbangan === form.tanggal_penerbangan &&
-             k.nomor_tiket === form.nomor_tiket
-      );
-      if (duplikat) {
-        setError('Klaim duplikat: kombinasi flight number, tanggal, dan nomor tiket sudah pernah diajukan.');
-        return;
-      }
-    }
-
+    // Catatan: Logika cek duplikat di Frontend dihapus agar Trigger PostgreSQL bisa bekerja dan diuji!
+    
     onSubmit(form);
   };
 
@@ -338,54 +274,125 @@ function ConfirmDeleteModal({ onConfirm, onClose }: { onConfirm: () => void; onC
 type FilterStatus = 'Semua' | StatusKlaim;
 
 export default function ClaimMissingMiles({ emailMember = 'user1@mail.com' }: ClaimMissingMilesProps) {
-  const [klaims, setKlaims] = useState<Klaim[]>(MOCK_KLAIM);
+  const [klaims, setKlaims] = useState<Klaim[]>([]);
   const [filter, setFilter] = useState<FilterStatus>('Semua');
 
   const [showTambah, setShowTambah] = useState(false);
   const [editTarget, setEditTarget] = useState<Klaim | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Klaim | null>(null);
 
+  // Ambil Data dari Supabase saat komponen di-mount
+  useEffect(() => {
+    fetchKlaims();
+  }, [emailMember]);
+
+  const fetchKlaims = async () => {
+    const { data, error } = await supabase
+      .from('claim_missing_miles')
+      .select('*')
+      .eq('email_member', emailMember)
+      .order('timestamp', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching claims:', error);
+    } else if (data) {
+      setKlaims(data);
+    }
+  };
+
   // Filter berdasarkan status
   const filtered = filter === 'Semua'
     ? klaims
     : klaims.filter(k => k.status_penerimaan === filter);
 
-  // Handlers
+  // Handlers Supabase
 
-  const handleTambah = (data: FormState) => {
-    const newKlaim: Klaim = {
-      id: Date.now(),
-      nomor_klaim: nextNomorKlaim(klaims),
-      email_member: emailMember,
-      ...data,
-      status_penerimaan: 'Menunggu',
-      timestamp: nowTimestamp(),
-    };
-    // TODO: POST /api/claim-missing-miles
-    setKlaims(prev => [...prev, newKlaim]);
-    setShowTambah(false);
+  const handleTambah = async (data: FormState) => {
+    const timestampSekarang = nowTimestamp();
+    
+    // Melakukan Insert ke Supabase
+    const { data: insertedData, error } = await supabase
+      .from('claim_missing_miles')
+      .insert([
+        {
+          email_member: emailMember,
+          maskapai: data.maskapai,
+          bandara_asal: data.bandara_asal,
+          bandara_tujuan: data.bandara_tujuan,
+          tanggal_penerbangan: data.tanggal_penerbangan,
+          flight_number: data.flight_number,
+          nomor_tiket: data.nomor_tiket,
+          kelas_kabin: data.kelas_kabin,
+          pnr: data.pnr,
+          status_penerimaan: 'Menunggu',
+          timestamp: timestampSekarang
+        }
+      ])
+      .select();
+
+    // INI BAGIAN MENANGKAP TRIGGER DARI POSTGRESQL
+    if (error) {
+      alert(error.message); // Akan memunculkan error duplikat dari trigger
+    } else {
+      alert("Klaim berhasil diajukan!");
+      if (insertedData && insertedData.length > 0) {
+        setKlaims(prev => [insertedData[0], ...prev]);
+      }
+      setShowTambah(false);
+    }
   };
 
-  const handleEdit = (data: FormState) => {
+  const handleEdit = async (data: FormState) => {
     if (!editTarget) return;
-    setKlaims(prev => prev.map(k =>
-      k.id === editTarget.id ? { ...k, ...data } : k
-    ));
-    // TODO: PUT /api/claim-missing-miles/:id
-    setEditTarget(null);
+
+    // Melakukan Update ke Supabase
+    const { error } = await supabase
+      .from('claim_missing_miles')
+      .update({
+        maskapai: data.maskapai,
+        bandara_asal: data.bandara_asal,
+        bandara_tujuan: data.bandara_tujuan,
+        tanggal_penerbangan: data.tanggal_penerbangan,
+        flight_number: data.flight_number,
+        nomor_tiket: data.nomor_tiket,
+        kelas_kabin: data.kelas_kabin,
+        pnr: data.pnr,
+      })
+      .eq('id', editTarget.id);
+
+    if (error) {
+      alert("Gagal update klaim: " + error.message);
+    } else {
+      alert("Klaim berhasil diupdate!");
+      setKlaims(prev => prev.map(k =>
+        k.id === editTarget.id ? { ...k, ...data } : k
+      ));
+      setEditTarget(null);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setKlaims(prev => prev.filter(k => k.id !== deleteTarget.id));
-    // TODO: DELETE /api/claim-missing-miles/:id
-    setDeleteTarget(null);
+
+    // Melakukan Delete ke Supabase
+    const { error } = await supabase
+      .from('claim_missing_miles')
+      .delete()
+      .eq('id', deleteTarget.id);
+
+    if (error) {
+      alert("Gagal menghapus klaim: " + error.message);
+    } else {
+      alert("Klaim berhasil dibatalkan/dihapus!");
+      setKlaims(prev => prev.filter(k => k.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    }
   };
 
   const filterTabs: FilterStatus[] = ['Semua', 'Menunggu', 'Disetujui', 'Ditolak'];
 
   return (
-    <div className="page-container" style={{ maxWidth: 1000, textAlign: 'left' }}>
+    <div className="page-container" style={{ maxWidth: 1000, textAlign: 'left', backgroundColor: 'transparent', margin: '0 auto', paddingTop: '24px' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -430,7 +437,7 @@ export default function ClaimMissingMiles({ emailMember = 'user1@mail.com' }: Cl
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                {['No. Klaim', 'Maskapai', 'Rute', 'Tanggal', 'Flight', 'Kelas', 'Status', 'Tanggal Pengajuan', 'Aksi'].map(h => (
+                {['ID Klaim', 'Maskapai', 'Rute', 'Tanggal', 'Flight', 'Kelas', 'Status', 'Tanggal Pengajuan', 'Aksi'].map(h => (
                   <th key={h} style={thStyle}>{h}</th>
                 ))}
               </tr>
@@ -445,7 +452,7 @@ export default function ClaimMissingMiles({ emailMember = 'user1@mail.com' }: Cl
               ) : (
                 filtered.map((k, i) => (
                   <tr key={k.id} style={{ borderBottom: '1px solid #f3f4f6', backgroundColor: i % 2 === 0 ? 'transparent' : '#fafafa' }}>
-                    <td style={tdStyle}><strong>{k.nomor_klaim}</strong></td>
+                    <td style={tdStyle}><strong>CLM-{k.id}</strong></td>
                     <td style={tdStyle}>{k.maskapai}</td>
                     <td style={tdStyle}>
                       <span style={{ whiteSpace: 'nowrap' }}>
@@ -456,7 +463,7 @@ export default function ClaimMissingMiles({ emailMember = 'user1@mail.com' }: Cl
                     <td style={tdStyle}>{k.flight_number}</td>
                     <td style={tdStyle}>{k.kelas_kabin}</td>
                     <td style={tdStyle}><StatusBadge status={k.status_penerimaan} /></td>
-                    <td style={tdStyle}>{k.timestamp}</td>
+                    <td style={tdStyle}>{new Date(k.timestamp).toLocaleDateString('id-ID')}</td>
                     <td style={tdStyle}>
                       {k.status_penerimaan === 'Menunggu' ? (
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -494,7 +501,6 @@ export default function ClaimMissingMiles({ emailMember = 'user1@mail.com' }: Cl
         <KlaimFormModal
           mode="tambah"
           initialValues={EMPTY_FORM}
-          existingKlaims={klaims}
           onSubmit={handleTambah}
           onClose={() => setShowTambah(false)}
         />
@@ -513,7 +519,6 @@ export default function ClaimMissingMiles({ emailMember = 'user1@mail.com' }: Cl
             nomor_tiket: editTarget.nomor_tiket,
             pnr: editTarget.pnr,
           }}
-          existingKlaims={klaims.filter(k => k.id !== editTarget.id)}
           onSubmit={handleEdit}
           onClose={() => setEditTarget(null)}
         />
@@ -607,21 +612,6 @@ const labelStyle: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
   color: 'var(--white-900)',
-};
-
-const submitButtonStyle: React.CSSProperties = {
-  padding: '12px 24px',
-  borderRadius: '12px',
-  background: 'linear-gradient(135deg, #6a90f0, #4d6fe0)',
-  color: '#ffffff',
-  fontSize: '14px',
-  fontWeight: 700,
-  border: 'none',
-  cursor: 'pointer',
-  boxShadow: '0 4px 14px rgba(77,111,224,0.35)',
-  fontFamily: "'Inter', sans-serif",
-  width: '100%',
-  marginTop: '12px',
 };
 
 const cancelButtonStyle: React.CSSProperties = {

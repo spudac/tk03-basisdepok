@@ -14,7 +14,6 @@ interface Transfer {
   tipe: TipeTransfer;
 }
 
-
 async function fetchTransferHistory(userEmail: string): Promise<Transfer[]> {
   const [{ data: sent }, { data: received }] = await Promise.all([
     supabase
@@ -28,7 +27,6 @@ async function fetchTransferHistory(userEmail: string): Promise<Transfer[]> {
       .eq('email_member_2', userEmail)
       .order('timestamp', { ascending: false }),
   ]);
-
 
   const otherEmails = new Set<string>();
   (sent ?? []).forEach(r => otherEmails.add(r.email_member_2));
@@ -66,12 +64,9 @@ async function fetchTransferHistory(userEmail: string): Promise<Transfer[]> {
     ...(received ?? []).map(r => toTransfer(r, 'Terima')),
   ];
 
-
   all.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
   return all;
 }
-
-
 
 function TransferModal({
   userEmail,
@@ -213,11 +208,10 @@ export default function TransferMiles() {
   useEffect(() => {
     loadHistory();
     refreshAwardMiles();
-
   }, [userEmail]);
 
   const handleSubmit = async (emailPenerima: string, jumlah: number, catatan: string): Promise<string | null> => {
-    const { error } = await supabase.rpc('transfer_miles', {
+    const { data, error } = await supabase.rpc('transfer_miles', {
       sender_email: userEmail,
       receiver_email: emailPenerima,
       transfer_amt: jumlah,
@@ -226,13 +220,17 @@ export default function TransferMiles() {
 
     if (error) return error.message;
 
+    if (data) {
+      alert(data);
+    }
+
     await Promise.all([loadHistory(), refreshAwardMiles()]);
     setShowModal(false);
     return null;
   };
 
   return (
-    <div className="page-container" style={{ width: '100%', maxWidth: 1000, textAlign: 'left' }}>
+    <div className="page-container" style={{ width: '100%', maxWidth: 1000, textAlign: 'left', backgroundColor: 'transparent', margin: '0 auto', paddingTop: '24px' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
