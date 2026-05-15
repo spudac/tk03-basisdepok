@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/supabase';
+import { hashSHA256 } from '@utils/hash';
 import '@components/Fitur.css';
-
-// Types 
 
 interface BasePengguna {
   email: string;
@@ -34,40 +34,6 @@ interface ProfileSettingsProps {
   email: string;
 }
 
-// Mock Data 
-
-const mockMember: MemberData = {
-  role: 'member',
-  email: 'john@example.com',
-  nomor_member: 'M0001',
-  tanggal_bergabung: '2024-01-15',
-  salutation: 'Mr.',
-  first_name: 'John',
-  middle_name: 'William',
-  last_name: 'Doe',
-  country_code: '+62',
-  mobile_number: '81234567890',
-  tanggal_lahir: '1990-05-15',
-  kewarganegaraan: 'Indonesia',
-};
-
-const mockStaf: StafData = {
-  role: 'staf',
-  email: 'admin@aeromiles.com',
-  id_staf: 'S0001',
-  salutation: 'Mr.',
-  first_name: 'Admin',
-  middle_name: '',
-  last_name: 'Aero',
-  country_code: '+62',
-  mobile_number: '81111111111',
-  tanggal_lahir: '1988-01-01',
-  kewarganegaraan: 'Indonesia',
-  kode_maskapai: 'GA',
-};
-
-// Options 
-
 const SALUTATION_OPTIONS = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.'];
 
 const COUNTRY_CODES = [
@@ -90,27 +56,7 @@ const KEWARGANEGARAAN_OPTIONS = [
   'China', 'South Korea',
 ];
 
-const MASKAPAI_OPTIONS = [
-  { kode: 'GA', nama: 'Garuda Indonesia' },
-  { kode: 'SQ', nama: 'Singapore Airlines' },
-  { kode: 'JL', nama: 'Japan Airlines' },
-  { kode: 'EK', nama: 'Emirates' },
-  { kode: 'LH', nama: 'Lufthansa' },
-  { kode: 'DL', nama: 'Delta' },
-  { kode: 'AN', nama: 'All Nippon Airways' },
-  { kode: 'CP', nama: 'Cathay Pacific' },
-];
-
-// Sub-components 
-function FormField({
-  label,
-  children,
-  style,
-}: {
-  label: string;
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}) {
+function FormField({ label, children, style }: { label: string; children: React.ReactNode; style?: React.CSSProperties; }) {
   return (
     <div className="form-group" style={style}>
       <label className="form-label">{label}</label>
@@ -119,75 +65,72 @@ function FormField({
   );
 }
 
-function PasswordModal({ onClose }: { onClose: () => void }) {
-  const [fields, setFields] = useState({
-    passwordLama: '',
-    passwordBaru: '',
-    konfirmasi: '',
-  });
+function PasswordModal({ onClose, email }: { onClose: () => void, email: string }) {
+  const [fields, setFields] = useState({ passwordLama: '', passwordBaru: '', konfirmasi: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSimpan = () => {
+  const handleSimpan = async () => {
     setError('');
     if (!fields.passwordLama) { setError('Password lama wajib diisi.'); return; }
     if (fields.passwordBaru.length < 6) { setError('Password baru minimal 6 karakter.'); return; }
     if (fields.passwordBaru !== fields.konfirmasi) { setError('Konfirmasi password tidak cocok.'); return; }
-    // TODO: kirim ke backend
-    setSuccess(true);
-    setTimeout(onClose, 1200);
+
+    setIsSubmitting(true);
+    try {
+      const hashedOld = await hashSHA256(fields.passwordLama);
+      const { error: rpcError } = await supabase.rpc("login_validation", {
+        login_email: email,
+        hashed_password: hashedOld,
+      });
+      if (rpcError) throw new Error("Password lama salah!");
+
+      const hashedNew = await hashSHA256(fields.passwordBaru);
+
+      const { error: updateError } = await supabase
+        .from('pengguna')
+        .update({ password: hashedNew })
+        .eq('email', email);
+      if (updateError) throw updateError;
+
+      await supabase.auth.updateUser({ password: fields.passwordBaru });
+
+      setSuccess(true);
+      setTimeout(onClose, 1200);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Gagal mengubah password.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div style={overlayStyle} onClick={onClose}>
       <div style={modalStyle} onClick={e => e.stopPropagation()}>
         <div style={modalHeaderStyle}>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--white-950)' }}>
-            Ubah Password
-          </h3>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--white-950)' }}>Ubah Password</h3>
           <button onClick={onClose} style={closeButtonStyle}>×</button>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <FormField label="Password Lama">
-            <input
-              type="password"
-              className="form-control"
-              value={fields.passwordLama}
-              onChange={e => setFields(f => ({ ...f, passwordLama: e.target.value }))}
-              placeholder="Masukkan password lama"
-            />
+            <input type="password" className="form-control" value={fields.passwordLama} onChange={e => setFields(f => ({ ...f, passwordLama: e.target.value }))} placeholder="Masukkan password lama" />
           </FormField>
           <FormField label="Password Baru">
-            <input
-              type="password"
-              className="form-control"
-              value={fields.passwordBaru}
-              onChange={e => setFields(f => ({ ...f, passwordBaru: e.target.value }))}
-              placeholder="Minimal 6 karakter"
-            />
+            <input type="password" className="form-control" value={fields.passwordBaru} onChange={e => setFields(f => ({ ...f, passwordBaru: e.target.value }))} placeholder="Minimal 6 karakter" />
           </FormField>
           <FormField label="Konfirmasi Password Baru">
-            <input
-              type="password"
-              className="form-control"
-              value={fields.konfirmasi}
-              onChange={e => setFields(f => ({ ...f, konfirmasi: e.target.value }))}
-              placeholder="Ulangi password baru"
-            />
+            <input type="password" className="form-control" value={fields.konfirmasi} onChange={e => setFields(f => ({ ...f, konfirmasi: e.target.value }))} placeholder="Ulangi password baru" />
           </FormField>
 
-          {error && (
-            <div style={errorBannerStyle}>{error}</div>
-          )}
-          {success && (
-            <div style={successBannerStyle}>Password berhasil diubah!</div>
-          )}
+          {error && <div style={errorBannerStyle}>{error}</div>}
+          {success && <div style={successBannerStyle}>Password berhasil diubah!</div>}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-          <button onClick={handleSimpan} className="btn-primary" style={{ marginTop: 0 }}>
-            Simpan
+          <button onClick={handleSimpan} className="btn-primary" style={{ marginTop: 0 }} disabled={isSubmitting}>
+            {isSubmitting ? 'Memproses...' : 'Simpan'}
           </button>
         </div>
       </div>
@@ -195,41 +138,128 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// Main Component 
-
-export default function ProfileSettings({ role }: ProfileSettingsProps) {
-  const initialData: ProfileData = role === 'member' ? mockMember : mockStaf;
-
-  const [formData, setFormData] = useState<ProfileData>(initialData);
+export default function ProfileSettings({ role, email }: ProfileSettingsProps) {
+  const [formData, setFormData] = useState<ProfileData | null>(null);
+  const [maskapaiList, setMaskapaiList] = useState<{kode_maskapai: string, nama_maskapai: string}[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Sync ketika role prop berubah (untuk testing)
-  const activeData: ProfileData = role === 'member' ? { ...mockMember, ...formData, role: 'member' } : { ...mockStaf, ...formData, role: 'staf' };
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      setIsLoading(true);
+      try {
+        if (role === 'staf') {
+          const { data: maskapaiData } = await supabase.from('maskapai').select('kode_maskapai, nama_maskapai').order('nama_maskapai');
+          if (maskapaiData) setMaskapaiList(maskapaiData);
+        }
+
+        const { data: penggunaData, error: penggunaErr } = await supabase
+          .from('pengguna')
+          .select('*')
+          .eq('email', email)
+          .single();
+        if (penggunaErr) throw penggunaErr;
+
+        const nameParts = (penggunaData.first_mid_name || '').split(' ');
+        const firstName = nameParts[0] || '';
+        const middleName = nameParts.slice(1).join(' ') || '';
+
+        let roleSpecificData = {};
+        if (role === 'member') {
+          const { data: memberData, error: memberErr } = await supabase.from('member').select('*').eq('email', email).single();
+          if (memberErr) throw memberErr;
+          roleSpecificData = memberData;
+        } else {
+          const { data: stafData, error: stafErr } = await supabase.from('staf').select('*').eq('email', email).single();
+          if (stafErr) throw stafErr;
+          roleSpecificData = stafData;
+        }
+
+        setFormData({
+          role,
+          email: penggunaData.email,
+          salutation: penggunaData.salutation,
+          first_name: firstName,
+          middle_name: middleName,
+          last_name: penggunaData.last_name,
+          country_code: penggunaData.country_code,
+          mobile_number: penggunaData.mobile_number,
+          tanggal_lahir: penggunaData.tanggal_lahir,
+          kewarganegaraan: penggunaData.kewarganegaraan,
+          ...roleSpecificData
+        } as ProfileData);
+
+      } catch (err: unknown) {
+        console.error("Gagal memuat profil:", err);
+        setSaveError("Gagal memuat data profil dari database.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, [email, role]);
 
   const update = (field: string, value: string) => {
+    if (!formData) return;
     setFormData(prev => ({ ...prev, [field]: value } as ProfileData));
     setSaveSuccess(false);
     setSaveError('');
   };
 
-  const handleSimpan = () => {
+  const handleSimpan = async () => {
+    if (!formData) return;
     setSaveError('');
-    if (!activeData.first_name.trim()) { setSaveError('Nama depan wajib diisi.'); return; }
-    if (!activeData.last_name.trim()) { setSaveError('Nama belakang wajib diisi.'); return; }
-    if (!activeData.mobile_number.trim()) { setSaveError('Nomor HP wajib diisi.'); return; }
-    if (!activeData.tanggal_lahir) { setSaveError('Tanggal lahir wajib diisi.'); return; }
+    if (!formData.first_name.trim()) { setSaveError('Nama depan wajib diisi.'); return; }
+    if (!formData.last_name.trim()) { setSaveError('Nama belakang wajib diisi.'); return; }
+    if (!formData.mobile_number.trim()) { setSaveError('Nomor HP wajib diisi.'); return; }
+    if (!formData.tanggal_lahir) { setSaveError('Tanggal lahir wajib diisi.'); return; }
 
-    const payload = {
-      ...activeData,
-      first_mid_name: [activeData.first_name, activeData.middle_name].filter(Boolean).join(' '),
-    };
-    // TODO: kirim PUT ke backend /api/profil
-    console.log('Menyimpan profil:', payload);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    setIsSaving(true);
+    try {
+      const first_mid_name = [formData.first_name, formData.middle_name].filter(Boolean).join(' ');
+
+      const { error: penggunaErr } = await supabase
+        .from('pengguna')
+        .update({
+          salutation: formData.salutation,
+          first_mid_name: first_mid_name,
+          last_name: formData.last_name,
+          country_code: formData.country_code,
+          mobile_number: formData.mobile_number,
+          tanggal_lahir: formData.tanggal_lahir,
+          kewarganegaraan: formData.kewarganegaraan
+        })
+        .eq('email', email);
+      if (penggunaErr) throw penggunaErr;
+
+      if (role === 'staf') {
+        const { error: stafErr } = await supabase
+          .from('staf')
+          .update({ kode_maskapai: (formData as StafData).kode_maskapai })
+          .eq('email', email);
+        if (stafErr) throw stafErr;
+      }
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "Gagal menyimpan perubahan.");
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return <div style={{ padding: 40, textAlign: 'center', fontFamily: "'Inter', sans-serif" }}>Memuat data profil...</div>;
+  }
+
+  if (!formData) {
+    return <div style={{ padding: 40, textAlign: 'center', color: 'red' }}>Gagal memuat profil. Pastikan email terdaftar.</div>;
+  }
 
   return (
     <div className="page-container" style={{ maxWidth: 960, textAlign: 'left', width: '100%' }}>
@@ -240,120 +270,51 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
       <div className="card" style={{ padding: '28px 36px' }}>
         <h2 className="card-title" style={{ color: '#111', textAlign: 'left', marginBottom: 20 }}>Data Profil</h2>
 
-        {/* Grid 3 Kolom */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-
-          {/* Baris 1: Email (2 kolom) & Salutation */}
           <FormField label="Email" style={{ gridColumn: 'span 2' }}>
-            <input
-              type="email"
-              className="form-control"
-              value={activeData.email}
-              disabled
-              title="Email tidak dapat diubah"
-            />
+            <input type="email" className="form-control" value={formData.email} disabled title="Email tidak dapat diubah" />
           </FormField>
           <FormField label="Salutation">
-            <select
-              className="form-control"
-              value={activeData.salutation}
-              onChange={e => update('salutation', e.target.value)}
-            >
-              {SALUTATION_OPTIONS.map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
+            <select className="form-control" value={formData.salutation} onChange={e => update('salutation', e.target.value)}>
+              {SALUTATION_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </FormField>
 
-          {/* Baris 2: Nama */}
           <FormField label="Nama Depan">
-            <input
-              type="text"
-              className="form-control"
-              value={activeData.first_name}
-              onChange={e => update('first_name', e.target.value)}
-              placeholder="Nama depan"
-            />
+            <input type="text" className="form-control" value={formData.first_name} onChange={e => update('first_name', e.target.value)} placeholder="Nama depan" />
           </FormField>
           <FormField label="Nama Tengah">
-            <input
-              type="text"
-              className="form-control"
-              value={activeData.middle_name}
-              onChange={e => update('middle_name', e.target.value)}
-              placeholder="Opsional"
-            />
+            <input type="text" className="form-control" value={formData.middle_name} onChange={e => update('middle_name', e.target.value)} placeholder="Opsional" />
           </FormField>
           <FormField label="Nama Belakang">
-            <input
-              type="text"
-              className="form-control"
-              value={activeData.last_name}
-              onChange={e => update('last_name', e.target.value)}
-              placeholder="Nama belakang"
-            />
+            <input type="text" className="form-control" value={formData.last_name} onChange={e => update('last_name', e.target.value)} placeholder="Nama belakang" />
           </FormField>
 
-          {/* Baris 3: Kewarganegaraan & Kontak */}
           <FormField label="Kewarganegaraan">
-            <select
-              className="form-control"
-              value={activeData.kewarganegaraan}
-              onChange={e => update('kewarganegaraan', e.target.value)}
-            >
-              {KEWARGANEGARAAN_OPTIONS.map(k => (
-                <option key={k} value={k}>{k}</option>
-              ))}
+            <select className="form-control" value={formData.kewarganegaraan} onChange={e => update('kewarganegaraan', e.target.value)}>
+              {KEWARGANEGARAAN_OPTIONS.map(k => <option key={k} value={k}>{k}</option>)}
             </select>
           </FormField>
           <FormField label="Country Code">
-            <select
-              className="form-control"
-              value={activeData.country_code}
-              onChange={e => update('country_code', e.target.value)}
-            >
-              {COUNTRY_CODES.map(c => (
-                <option key={c.code} value={c.code}>{c.label}</option>
-              ))}
+            <select className="form-control" value={formData.country_code} onChange={e => update('country_code', e.target.value)}>
+              {COUNTRY_CODES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
             </select>
           </FormField>
           <FormField label="Nomor HP">
-            <input
-              type="tel"
-              className="form-control"
-              value={activeData.mobile_number}
-              onChange={e => update('mobile_number', e.target.value.replace(/\D/g, ''))}
-              placeholder="cth: 81234567890"
-            />
+            <input type="tel" className="form-control" value={formData.mobile_number} onChange={e => update('mobile_number', e.target.value.replace(/\D/g, ''))} placeholder="cth: 81234567890" />
           </FormField>
 
-          {/* Baris 4: Tanggal Lahir & Info Keanggotaan */}
           <FormField label="Tanggal Lahir">
-            <input
-              type="date"
-              className="form-control"
-              value={activeData.tanggal_lahir}
-              onChange={e => update('tanggal_lahir', e.target.value)}
-            />
+            <input type="date" className="form-control" value={formData.tanggal_lahir} onChange={e => update('tanggal_lahir', e.target.value)} />
           </FormField>
 
           {role === 'member' && (
             <>
               <FormField label="Nomor Member">
-                <input
-                  type="text"
-                  className="form-control"
-                  value={(activeData as MemberData).nomor_member}
-                  disabled
-                />
+                <input type="text" className="form-control" value={(formData as MemberData).nomor_member || '-'} disabled />
               </FormField>
               <FormField label="Tanggal Bergabung">
-                <input
-                  type="text"
-                  className="form-control"
-                  value={(activeData as MemberData).tanggal_bergabung}
-                  disabled
-                />
+                <input type="text" className="form-control" value={(formData as MemberData).tanggal_bergabung || '-'} disabled />
               </FormField>
             </>
           )}
@@ -361,22 +322,13 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
           {role === 'staf' && (
             <>
               <FormField label="ID Staf">
-                <input
-                  type="text"
-                  className="form-control"
-                  value={(activeData as StafData).id_staf}
-                  disabled
-                />
+                <input type="text" className="form-control" value={(formData as StafData).id_staf || '-'} disabled />
               </FormField>
               <FormField label="Kode Maskapai">
-                <select
-                  className="form-control"
-                  value={(activeData as StafData).kode_maskapai}
-                  onChange={e => update('kode_maskapai', e.target.value)}
-                >
-                  {MASKAPAI_OPTIONS.map(m => (
-                    <option key={m.kode} value={m.kode}>
-                      {m.kode} - {m.nama}
+                <select className="form-control" value={(formData as StafData).kode_maskapai} onChange={e => update('kode_maskapai', e.target.value)}>
+                  {maskapaiList.map(m => (
+                    <option key={m.kode_maskapai} value={m.kode_maskapai}>
+                      {m.kode_maskapai} - {m.nama_maskapai}
                     </option>
                   ))}
                 </select>
@@ -385,98 +337,28 @@ export default function ProfileSettings({ role }: ProfileSettingsProps) {
           )}
         </div>
 
-        {/* Feedback Messages */}
         {saveError && <div style={{ ...errorBannerStyle, marginTop: 16 }}>{saveError}</div>}
         {saveSuccess && <div style={{ ...successBannerStyle, marginTop: 16 }}>Perubahan berhasil disimpan!</div>}
 
-        {/* Footer: Tombol Ubah Password & Simpan */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginTop: 28,
-          paddingTop: 24,
-          borderTop: '1px solid #e2eaff'
-        }}>
-          <button
-            className="btn-outline"
-            onClick={() => setShowPasswordModal(true)}
-            style={{ margin: 0 }}
-          >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28, paddingTop: 24, borderTop: '1px solid #e2eaff' }}>
+          <button className="btn-outline" onClick={() => setShowPasswordModal(true)} style={{ margin: 0 }}>
             Ubah Password
           </button>
           
-          <button className="btn-primary" onClick={handleSimpan} style={{ margin: 0 }}>
-            Simpan Perubahan
+          <button className="btn-primary" onClick={handleSimpan} style={{ margin: 0 }} disabled={isSaving}>
+            {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>
         </div>
       </div>
 
-      {/* Modal Ubah Password */}
-      {showPasswordModal && (
-        <PasswordModal onClose={() => setShowPasswordModal(false)} />
-      )}
+      {showPasswordModal && <PasswordModal onClose={() => setShowPasswordModal(false)} email={email} />}
     </div>
   );
 }
 
-// Inline Styles
-const overlayStyle: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  backgroundColor: 'rgba(0,0,0,0.45)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1000,
-  padding: '20px',
-  fontFamily: "'Inter', sans-serif",
-};
-
-const modalStyle: React.CSSProperties = {
-  background: '#ffffff',
-  borderRadius: '16px',
-  padding: '32px',
-  width: '100%',
-  maxWidth: 480,
-  boxShadow: '0 10px 30px rgba(77,111,224,0.08)',
-  border: '1px solid #e2eaff',
-  fontFamily: "'Inter', sans-serif",
-};
-
-const modalHeaderStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 24,
-};
-
-const closeButtonStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  fontSize: 24,
-  cursor: 'pointer',
-  color: 'var(--white-800)',
-  lineHeight: 1,
-  padding: '0 4px',
-};
-
-const errorBannerStyle: React.CSSProperties = {
-  backgroundColor: '#fff0f0',
-  border: '1px solid #ffcccc',
-  color: '#c00',
-  borderRadius: 8,
-  padding: '10px 14px',
-  fontSize: 14,
-  fontFamily: "'Inter', sans-serif",
-};
-
-const successBannerStyle: React.CSSProperties = {
-  backgroundColor: '#f0fff4',
-  border: '1px solid #b2f5c8',
-  color: '#1a7a3a',
-  borderRadius: 8,
-  padding: '10px 14px',
-  fontSize: 14,
-  fontFamily: "'Inter', sans-serif",
-};
+const overlayStyle: React.CSSProperties = { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px', fontFamily: "'Inter', sans-serif" };
+const modalStyle: React.CSSProperties = { background: '#ffffff', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: 480, boxShadow: '0 10px 30px rgba(77,111,224,0.08)', border: '1px solid #e2eaff', fontFamily: "'Inter', sans-serif" };
+const modalHeaderStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 };
+const closeButtonStyle: React.CSSProperties = { background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--white-800)', lineHeight: 1, padding: '0 4px' };
+const errorBannerStyle: React.CSSProperties = { backgroundColor: '#fff0f0', border: '1px solid #ffcccc', color: '#c00', borderRadius: 8, padding: '10px 14px', fontSize: 14, fontFamily: "'Inter', sans-serif" };
+const successBannerStyle: React.CSSProperties = { backgroundColor: '#f0fff4', border: '1px solid #b2f5c8', color: '#1a7a3a', borderRadius: 8, padding: '10px 14px', fontSize: 14, fontFamily: "'Inter', sans-serif" };
