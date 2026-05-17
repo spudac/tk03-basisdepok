@@ -20,54 +20,39 @@ export default function Login() {
     setIsLoading(true);
     try {
       const hashed = await hashSHA256(password);
+      
+      // Login rpc
       const { error: rpcError } = await supabase.rpc("login_validation", {
         login_email: email,
         hashed_password: hashed,
       });
       if (rpcError) throw rpcError;
 
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // fetch data rpc
+      const { data: userData, error: userError } = await supabase.rpc("get_user_data", {
+        p_email: email
       });
-      if (authError) throw authError;
 
-      const { data: penggunaData, error: penggunaError } = await supabase
-        .from("pengguna")
-        .select(
-          "first_mid_name, last_name, salutation, country_code, mobile_number, tanggal_lahir, kewarganegaraan"
-        )
-        .eq("email", email)
-        .single();
-      if (penggunaError) throw penggunaError;
+      if (userError) throw userError;
 
-      const { data: memberData } = await supabase
-        .from("member")
-        .select("nomor_member, tanggal_bergabung, id_tier, award_miles, total_miles")
-        .eq("email", email)
-        .single();
+      // Session storage setup
+      sessionStorage.setItem(
+        "aeromiles_user",
+        JSON.stringify({ email, ...userData })
+      );
 
-      if (memberData) {
-        sessionStorage.setItem(
-          "aeromiles_user",
-          JSON.stringify({ email, role: "member", ...penggunaData, ...memberData })
-        );
+      // Route based on role from RPC
+      if (userData.role === "member") {
         navigate("/dashboard");
-      } else {
-        const { data: stafData, error: stafError } = await supabase
-          .from("staf")
-          .select("id_staf, kode_maskapai")
-          .eq("email", email)
-          .single();
-        if (stafError) throw new Error("Account not linked to member or staf.");
-        sessionStorage.setItem(
-          "aeromiles_user",
-          JSON.stringify({ email, role: "staf", ...penggunaData, ...stafData })
-        );
+      } else if (userData.role === "staf") {
         navigate("/staff/dashboard");
+      } else {
+        throw new Error("Invalid role detected.");
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Login failed.");
+
+    } catch (err: any) {
+      // Supabase error check
+      setError(err?.message || "Login failed.");
     } finally {
       setIsLoading(false);
     }

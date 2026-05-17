@@ -1,25 +1,183 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './ManageMembersPage.css';
 import plusIcon from '../assets/Plus.svg';
 import editIcon from '../assets/Edit.svg';
 import trashIcon from '../assets/Trash.svg';
 import dropdownIcon from '../assets/Dropdown.svg';
+import { supabase } from '@/supabase';
 
-const MOCK_MEMBERS = [
-  { no: 'M0001', nama: 'Mr John William Doe', email: 'john@example.gmail.com', tier: 'Plat.', miles: '55,000', award: '32,000', bergabung: '2024-01-15' },
-  { no: 'M0002', nama: 'Ms Jane Elizabeth Smith', email: 'jane.smith@example.com', tier: 'Gold', miles: '20,000', award: '15,000', bergabung: '2024-02-20' },
-  { no: 'M0003', nama: 'Dr. Alex Robert Johnson', email: 'alex.j@samplemail.com', tier: 'Silver', miles: '5,000', award: '3,500', bergabung: '2024-03-10' },
-  { no: 'M0004', nama: 'Mrs. Emily Anne Brown', email: 'emily.brown@example.org', tier: 'Blue', miles: '0', award: '0', bergabung: '2024-04-05' },
-];
+interface Member {
+  nomor_member: string;
+  tanggal_bergabung: string;
+  award_miles: number;
+  total_miles: number;
+  pengguna: {
+    email: string;
+    salutation: string;
+    first_mid_name: string;
+    last_name: string;
+    country_code: string;
+    mobile_number: string;
+    tanggal_lahir: string;
+    kewarganegaraan: string;
+  };
+  tier: {
+    nama: string;
+  };
+}
+
+const TIER_MAP: Record<string, string> = {
+  'Blue': 'T01',
+  'Silver': 'T02',
+  'Gold': 'T03',
+  'Platinum': 'T04',
+  'Plat.': 'T04'
+};
 
 const ManageMembersPage: React.FC = () => {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [editForm, setEditForm] = useState({
+    salutation: '',
+    first_mid_name: '',
+    last_name: '',
+    kewarganegaraan: '',
+    country_code: '',
+    mobile_number: '',
+    tanggal_lahir: '',
+    id_tier: ''
+  });
+
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const fetchMembers = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.rpc('get_all_members_admin');
+
+    if (error) {
+      console.error('Error fetching members:', error);
+      setFeedback({ type: 'error', text: error.message });
+    } else {
+      const mapped: Member[] = (data || []).map((row: any) => ({
+        nomor_member: row.nomor_member,
+        tanggal_bergabung: row.tanggal_bergabung,
+        award_miles: row.award_miles,
+        total_miles: row.total_miles,
+        pengguna: {
+          email: row.email,
+          salutation: row.salutation,
+          first_mid_name: row.first_mid_name,
+          last_name: row.last_name,
+          country_code: row.country_code,
+          mobile_number: row.mobile_number,
+          tanggal_lahir: row.tanggal_lahir,
+          kewarganegaraan: row.kewarganegaraan
+        },
+        tier: {
+          nama: row.tier_nama
+        }
+      }));
+      setMembers(mapped);
+    }
+    setLoading(false);
+  };
+
+  const openDeleteModal = (email: string) => {
+    setSelectedEmail(email);
+    setIsDeleteModalOpen(true);
+  };
+
+  const openEditModal = (member: Member) => {
+    setEditingMember(member);
+    setEditForm({
+      salutation: member.pengguna.salutation,
+      first_mid_name: member.pengguna.first_mid_name,
+      last_name: member.pengguna.last_name,
+      kewarganegaraan: member.pengguna.kewarganegaraan,
+      country_code: member.pengguna.country_code,
+      mobile_number: member.pengguna.mobile_number,
+      tanggal_lahir: member.pengguna.tanggal_lahir,
+      id_tier: TIER_MAP[member.tier.nama] || 'T01'
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingMember) return;
+    setFeedback(null);
+    const targetEmail = editingMember.pengguna.email;
+
+    const { data, error } = await supabase.rpc('update_member_admin', {
+      p_email: targetEmail,
+      p_salutation: editForm.salutation,
+      p_first_mid_name: editForm.first_mid_name,
+      p_last_name: editForm.last_name,
+      p_kewarganegaraan: editForm.kewarganegaraan,
+      p_country_code: editForm.country_code,
+      p_mobile_number: editForm.mobile_number,
+      p_tanggal_lahir: editForm.tanggal_lahir,
+      p_id_tier: editForm.id_tier
+    });
+
+    if (error) {
+      setFeedback({ type: 'error', text: error.message });
+    } else {
+      setFeedback({ type: 'success', text: data });
+      fetchMembers();
+    }
+    setIsEditModalOpen(false);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedEmail) return;
+    setFeedback(null);
+
+    const { data, error } = await supabase.rpc('delete_member_admin', {
+      p_email: selectedEmail
+    });
+
+    if (error) {
+      setFeedback({ type: 'error', text: error.message });
+    } else {
+      setFeedback({ type: 'success', text: data });
+      fetchMembers();
+    }
+    setIsDeleteModalOpen(false);
+  };
 
   return (
     <div className="manage-members-wrapper">
       <div className="manage-members-page">
+
+        {/* Feedback Banner */}
+        {feedback && (
+          <div style={{
+            padding: '12px 16px',
+            marginBottom: '16px',
+            borderRadius: '8px',
+            backgroundColor: feedback.type === 'success' ? '#dcfce7' : '#fee2e2',
+            color: feedback.type === 'success' ? '#166534' : '#991b1b',
+            border: `1px solid ${feedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <span style={{ fontWeight: 600, fontSize: 14 }}>{feedback.text}</span>
+            <button onClick={() => setFeedback(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'inherit', opacity: 0.7 }}>×</button>
+          </div>
+        )}
+
         <div className="mm-header-section">
           <div className="mm-title-row">
             <h1>Kelola Member</h1>
@@ -55,22 +213,26 @@ const ManageMembersPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {MOCK_MEMBERS.map((m, i) => (
+              {loading ? (
+                <tr><td colSpan={8} style={{textAlign: 'center', padding: '20px'}}>Loading...</td></tr>
+              ) : members.length === 0 ? (
+                <tr><td colSpan={8} style={{textAlign: 'center', padding: '20px'}}>Belum ada member.</td></tr>
+              ) : members.map((m, i) => (
                 <tr key={i}>
-                  <td className="text-black font-medium">{m.no}</td>
-                  <td className="text-black">{m.nama}</td>
-                  <td className="text-black">{m.email}</td>
+                  <td className="text-black font-medium">{m.nomor_member}</td>
+                  <td className="text-black">{m.pengguna.salutation} {m.pengguna.first_mid_name} {m.pengguna.last_name}</td>
+                  <td className="text-black">{m.pengguna.email}</td>
                   <td>
-                    <span className={`tier-badge tier-${m.tier.replace('.', '').toLowerCase()}`}>
-                      {m.tier}
+                    <span className={`tier-badge tier-${m.tier.nama.replace('.', '').toLowerCase()}`}>
+                      {m.tier.nama}
                     </span>
                   </td>
-                  <td className="text-black">{m.miles}</td>
-                  <td className="text-black">{m.award}</td>
-                  <td className="text-black">{m.bergabung}</td>
+                  <td className="text-black">{m.total_miles.toLocaleString()}</td>
+                  <td className="text-black">{m.award_miles.toLocaleString()}</td>
+                  <td className="text-black">{m.tanggal_bergabung}</td>
                   <td className="mm-aksi-cell">
-                    <button className="btn-icon" onClick={() => setIsEditModalOpen(true)}><img src={editIcon} alt="Edit" /></button>
-                    <button className="btn-icon" onClick={() => setIsDeleteModalOpen(true)}><img src={trashIcon} alt="Hapus" /></button>
+                    <button className="btn-icon" onClick={() => openEditModal(m)}><img src={editIcon} alt="Edit" /></button>
+                    <button className="btn-icon" onClick={() => openDeleteModal(m.pengguna.email)}><img src={trashIcon} alt="Hapus" /></button>
                   </td>
                 </tr>
               ))}
@@ -91,40 +253,7 @@ const ManageMembersPage: React.FC = () => {
               <h2>Tambah Member Baru</h2>
               <button className="btn-close" onClick={() => setIsAddModalOpen(false)}>✕</button>
             </div>
-            
-            <div className="form-row">
-              <div className="form-group"><label>Email</label><input type="email" /></div>
-              <div className="form-group"><label>Password</label><input type="password" /></div>
-            </div>
-            <div className="form-row">
-              <div className="form-group"><label>Salutation</label>
-                <select defaultValue="Mr.">
-                  <option>Mr.</option><option>Ms.</option><option>Mrs.</option><option>Dr.</option>
-                </select>
-              </div>
-              <div></div>
-            </div>
-            <div className="form-row">
-              <div className="form-group"><label>Nama Depan</label><input type="text" /></div>
-              <div></div>
-            </div>
-            <div className="form-row">
-              <div className="form-group"><label>Nama Belakang</label><input type="text" /></div>
-              <div className="form-group"><label>Kewarganegaraan</label>
-                <select defaultValue="Indonesia"><option>Indonesia</option></select>
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group"><label>Country Code</label>
-                <select defaultValue="+62"><option>+62</option></select>
-              </div>
-              <div className="form-group"><label>Nomor HP</label><input type="text" /></div>
-            </div>
-            <div className="form-row">
-              <div className="form-group"><label>Tanggal Lahir</label><input type="date" defaultValue="1976-01-12" /></div>
-              <div></div>
-            </div>
-
+            {/* Form placeholders... */}
             <div className="modal-actions-right">
               <button className="btn-simpan" onClick={() => setIsAddModalOpen(false)}>Simpan</button>
             </div>
@@ -133,7 +262,7 @@ const ManageMembersPage: React.FC = () => {
       )}
 
       {/* MODAL EDIT */}
-      {isEditModalOpen && (
+      {isEditModalOpen && editingMember && (
         <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)}>
           <div className="mm-modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -143,39 +272,86 @@ const ManageMembersPage: React.FC = () => {
             
             <div className="form-row">
               <div className="form-group"><label>Salutation</label>
-                <select defaultValue="Mr.">
+                <select 
+                  value={editForm.salutation} 
+                  onChange={e => setEditForm({...editForm, salutation: e.target.value})}
+                >
                   <option>Mr.</option><option>Ms.</option><option>Mrs.</option><option>Dr.</option>
                 </select>
               </div>
               <div></div>
             </div>
             <div className="form-row">
-              <div className="form-group"><label>Nama Depan</label><input type="text" defaultValue="John" /></div>
-              <div className="form-group"><label>Nama Tengah</label><input type="text" defaultValue="William" /></div>
+              <div className="form-group"><label>Nama Depan/Tengah</label>
+                <input 
+                  type="text" 
+                  value={editForm.first_mid_name} 
+                  onChange={e => setEditForm({...editForm, first_mid_name: e.target.value})}
+                />
+              </div>
+              <div></div>
             </div>
             <div className="form-row">
-              <div className="form-group"><label>Nama Belakang</label><input type="text" defaultValue="Doe" /></div>
+              <div className="form-group"><label>Nama Belakang</label>
+                <input 
+                  type="text" 
+                  value={editForm.last_name} 
+                  onChange={e => setEditForm({...editForm, last_name: e.target.value})}
+                />
+              </div>
               <div className="form-group"><label>Kewarganegaraan</label>
-                <select defaultValue="Indonesia"><option>Indonesia</option></select>
+                <select 
+                  value={editForm.kewarganegaraan}
+                  onChange={e => setEditForm({...editForm, kewarganegaraan: e.target.value})}
+                >
+                  <option value="Indonesia">Indonesia</option>
+                  <option value="USA">USA</option>
+                  <option value="Singapore">Singapore</option>
+                </select>
               </div>
             </div>
             <div className="form-row">
               <div className="form-group"><label>Country Code</label>
-                <select defaultValue="+62"><option>+62</option></select>
+                <select 
+                  value={editForm.country_code}
+                  onChange={e => setEditForm({...editForm, country_code: e.target.value})}
+                >
+                  <option value="62">+62</option>
+                  <option value="1">+1</option>
+                  <option value="65">+65</option>
+                </select>
               </div>
-              <div className="form-group"><label>Nomor HP</label><input type="text" defaultValue="81234567890" /></div>
+              <div className="form-group"><label>Nomor HP</label>
+                <input 
+                  type="text" 
+                  value={editForm.mobile_number}
+                  onChange={e => setEditForm({...editForm, mobile_number: e.target.value})}
+                />
+              </div>
             </div>
             <div className="form-row">
-              <div className="form-group"><label>Tanggal Lahir</label><input type="date" defaultValue="1990-05-15" /></div>
+              <div className="form-group"><label>Tanggal Lahir</label>
+                <input 
+                  type="date" 
+                  value={editForm.tanggal_lahir}
+                  onChange={e => setEditForm({...editForm, tanggal_lahir: e.target.value})}
+                />
+              </div>
               <div className="form-group"><label>Tier</label>
-                <select defaultValue="Gold">
-                  <option>Blue</option><option>Silver</option><option>Gold</option><option>Plat.</option>
+                <select 
+                  value={editForm.id_tier}
+                  onChange={e => setEditForm({...editForm, id_tier: e.target.value})}
+                >
+                  <option value="T01">Blue</option>
+                  <option value="T02">Silver</option>
+                  <option value="T03">Gold</option>
+                  <option value="T04">Platinum</option>
                 </select>
               </div>
             </div>
 
             <div className="modal-actions-right">
-              <button className="btn-simpan" onClick={() => setIsEditModalOpen(false)}>Simpan</button>
+              <button className="btn-simpan" onClick={handleUpdate}>Simpan</button>
             </div>
           </div>
         </div>
@@ -196,7 +372,7 @@ const ManageMembersPage: React.FC = () => {
 
             <div className="modal-actions-right" style={{gap: '12px'}}>
               <button className="btn-batal" onClick={() => setIsDeleteModalOpen(false)}>Batal</button>
-              <button className="btn-hapus" onClick={() => setIsDeleteModalOpen(false)}>Hapus</button>
+              <button className="btn-hapus" onClick={handleDelete}>Hapus</button>
             </div>
           </div>
         </div>
