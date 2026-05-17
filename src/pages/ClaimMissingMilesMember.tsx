@@ -141,8 +141,6 @@ function KlaimFormModal({
     if (!form.nomor_tiket.trim()) { setError('Nomor tiket wajib diisi.'); return; }
     if (!form.pnr.trim()) { setError('PNR wajib diisi.'); return; }
     if (form.bandara_asal === form.bandara_tujuan) { setError('Bandara asal dan tujuan tidak boleh sama.'); return; }
-
-    // Catatan: Logika cek duplikat di Frontend dihapus agar Trigger PostgreSQL bisa bekerja dan diuji!
     
     onSubmit(form);
   };
@@ -249,7 +247,6 @@ function KlaimFormModal({
 }
 
 // Confirm Delete Modal
-
 function ConfirmDeleteModal({ onConfirm, onClose }: { onConfirm: () => void; onClose: () => void }) {
   return (
     <div style={overlayStyle} onClick={onClose}>
@@ -270,7 +267,6 @@ function ConfirmDeleteModal({ onConfirm, onClose }: { onConfirm: () => void; onC
 }
 
 // Main Component
-
 type FilterStatus = 'Semua' | StatusKlaim;
 
 export default function ClaimMissingMiles({ emailMember = 'user1@mail.com' }: ClaimMissingMilesProps) {
@@ -306,7 +302,6 @@ export default function ClaimMissingMiles({ emailMember = 'user1@mail.com' }: Cl
     : klaims.filter(k => k.status_penerimaan === filter);
 
   // Handlers Supabase
-
   const handleTambah = async (data: FormState) => {
     const timestampSekarang = nowTimestamp();
     
@@ -330,9 +325,8 @@ export default function ClaimMissingMiles({ emailMember = 'user1@mail.com' }: Cl
       ])
       .select();
 
-    // INI BAGIAN MENANGKAP TRIGGER DARI POSTGRESQL
     if (error) {
-      alert(error.message); // Akan memunculkan error duplikat dari trigger
+      alert(error.message); 
     } else {
       alert("Klaim berhasil diajukan!");
       if (insertedData && insertedData.length > 0) {
@@ -345,7 +339,6 @@ export default function ClaimMissingMiles({ emailMember = 'user1@mail.com' }: Cl
   const handleEdit = async (data: FormState) => {
     if (!editTarget) return;
 
-    // Melakukan Update ke Supabase
     const { error } = await supabase
       .from('claim_missing_miles')
       .update({
