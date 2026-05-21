@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '@components/Fitur.css';
+import { supabase } from '../supabase';
 
 // Types
 
@@ -34,47 +35,6 @@ const MASKAPAI_OPTIONS = [
   { kode: 'EK', nama: 'Emirates' },
   { kode: 'LH', nama: 'Lufthansa' },
   { kode: 'MH', nama: 'Malaysia Airlines' },
-];
-
-// Mock Data
-
-const MOCK_KLAIM: Klaim[] = [
-  {
-    id: 1, nomor_klaim: 'CLM-001',
-    email_member: 'john@example.com', nama_member: 'John W. Doe',
-    email_staf: 'staff1@aero.com',
-    maskapai: 'GA', bandara_asal: 'CGK', bandara_tujuan: 'DPS',
-    tanggal_penerbangan: '2024-10-01', flight_number: 'GA404',
-    kelas_kabin: 'Business', timestamp: '2024-10-05 18:45:00',
-    status_penerimaan: 'Disetujui',
-  },
-  {
-    id: 2, nomor_klaim: 'CLM-002',
-    email_member: 'john@example.com', nama_member: 'John W. Doe',
-    email_staf: null,
-    maskapai: 'SQ', bandara_asal: 'SIN', bandara_tujuan: 'NRT',
-    tanggal_penerbangan: '2024-11-15', flight_number: 'SQ12',
-    kelas_kabin: 'Economy', timestamp: '2024-11-20 18:45:00',
-    status_penerimaan: 'Menunggu',
-  },
-  {
-    id: 3, nomor_klaim: 'CLM-003',
-    email_member: 'jane@example.com', nama_member: 'Jane Smith',
-    email_staf: 'staff1@aero.com',
-    maskapai: 'GA', bandara_asal: 'CGK', bandara_tujuan: 'SUB',
-    tanggal_penerbangan: '2024-12-01', flight_number: 'GA310',
-    kelas_kabin: 'Economy', timestamp: '2024-12-05 18:45:00',
-    status_penerimaan: 'Ditolak',
-  },
-  {
-    id: 4, nomor_klaim: 'CLM-004',
-    email_member: 'budi@example.com', nama_member: 'Budi A. Santoso',
-    email_staf: null,
-    maskapai: 'MH', bandara_asal: 'KUL', bandara_tujuan: 'BKK',
-    tanggal_penerbangan: '2025-01-10', flight_number: 'MH780',
-    kelas_kabin: 'Premium Economy', timestamp: '2025-01-15 18:45:00',
-    status_penerimaan: 'Menunggu',
-  },
 ];
 
 // Helpers
@@ -128,7 +88,7 @@ function SetujuiModal({
         </div>
         <div style={modalFooterStyle}>
           <button onClick={onClose} style={cancelButtonStyle}>Batal</button>
-          <button onClick={onConfirm} className="btn-primary" style={{ marginTop: 0 }}>
+          <button onClick={onConfirm} style={approveButtonStyle}>
             Setujui
           </button>
         </div>
@@ -168,8 +128,7 @@ function TolakModal({
           <button onClick={onClose} style={cancelButtonStyle}>Batal</button>
           <button
             onClick={onConfirm}
-            className="btn-primary"
-            style={{ marginTop: 0, backgroundColor: '#ef4444' }}
+            style={{ ...approveButtonStyle, background: '#ef4444' }}
           >
             Tolak
           </button>
@@ -187,7 +146,7 @@ type FilterMaskapai = 'Semua Maskapai' | string;
 export default function ClaimMissingMilesStaf({
   emailStaf = 'staff1@aero.com',
 }: ClaimMissingMilesStafProps) {
-  const [klaims, setKlaims] = useState<Klaim[]>(MOCK_KLAIM);
+  const [klaims, setKlaims] = useState<Klaim[]>([]);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('Semua Status');
   const [filterMaskapai, setFilterMaskapai] = useState<FilterMaskapai>('Semua Maskapai');
   const [filterTanggalDari, setFilterTanggalDari] = useState('');
@@ -195,6 +154,48 @@ export default function ClaimMissingMilesStaf({
 
   const [setujuiTarget, setSetujuiTarget] = useState<Klaim | null>(null);
   const [tolakTarget, setTolakTarget] = useState<Klaim | null>(null);
+
+  // Load Data dari Supabase
+  useEffect(() => {
+    fetchKlaims();
+  }, []);
+
+  const fetchKlaims = async () => {
+    const { data, error } = await supabase
+      .from('claim_missing_miles')
+      .select(`
+        *,
+        member:email_member (
+          pengguna:email (
+            first_mid_name,
+            last_name
+          )
+        )
+      `)
+      .order('timestamp', { ascending: false });
+
+    if (error) {
+      console.error(error);
+    } else if (data) {
+      const formatted = data.map((d: any) => ({
+        id: d.id,
+        nomor_klaim: `CLM-${String(d.id).padStart(3, '0')}`,
+        email_member: d.email_member,
+        // Fallback jika join pengguna tidak ada
+        nama_member: d.member?.pengguna?.first_mid_name ? `${d.member.pengguna.first_mid_name} ${d.member.pengguna.last_name}` : d.email_member,
+        email_staf: d.email_staf,
+        maskapai: d.maskapai,
+        bandara_asal: d.bandara_asal,
+        bandara_tujuan: d.bandara_tujuan,
+        tanggal_penerbangan: d.tanggal_penerbangan,
+        flight_number: d.flight_number,
+        kelas_kabin: d.kelas_kabin,
+        timestamp: d.timestamp.replace('T', ' ').substring(0, 19),
+        status_penerimaan: d.status_penerimaan,
+      }));
+      setKlaims(formatted);
+    }
+  };
 
   // Filter logic
   const filtered = klaims.filter(k => {
@@ -206,30 +207,87 @@ export default function ClaimMissingMilesStaf({
   });
 
   // Handlers
-  const handleSetujui = () => {
+  const handleSetujui = async () => {
     if (!setujuiTarget) return;
-    setKlaims(prev => prev.map(k =>
-      k.id === setujuiTarget.id
-        ? { ...k, status_penerimaan: 'Disetujui', email_staf: emailStaf }
-        : k
-    ));
-    // TODO: PUT /api/claim-missing-miles/:id/setujui
+
+    // 1. Update status klaim di database
+    const { error: errKlaim } = await supabase
+      .from('claim_missing_miles')
+      .update({ status_penerimaan: 'Disetujui', email_staf: emailStaf })
+      .eq('id', setujuiTarget.id);
+
+    if (errKlaim) {
+      alert("Gagal menyetujui klaim: " + errKlaim.message);
+      return;
+    }
+
+    // 2. Ambil data tier dan miles member SEBELUM diupdate
+    const { data: memberBefore } = await supabase
+      .from('member')
+      .select('total_miles, award_miles, id_tier, tier(nama)')
+      .eq('email', setujuiTarget.email_member)
+      .single();
+
+    if (memberBefore) {
+      // Simulasi penambahan miles hasil klaim (Misal: 1500 miles)
+      const tambahanMiles = 1500; 
+      const newTotal = memberBefore.total_miles + tambahanMiles;
+      const newAward = memberBefore.award_miles + tambahanMiles;
+
+      // 3. UPDATE MILES MEMBER (Tindakan ini yang akan membangunkan TRIGGER Auto-Tier di PostgreSQL!)
+      const { error: errMember } = await supabase
+        .from('member')
+        .update({ total_miles: newTotal, award_miles: newAward })
+        .eq('email', setujuiTarget.email_member);
+
+      if (errMember) {
+        alert("Gagal menambahkan miles ke member: " + errMember.message);
+      } else {
+        
+        // 4. Ambil data tier member SESUDAH diupdate untuk mengecek apakah Trigger merubah tier-nya
+        const { data: memberAfter } = await supabase
+          .from('member')
+          .select('id_tier, tier(nama)')
+          .eq('email', setujuiTarget.email_member)
+          .single();
+
+        // Evaluasi pesan alert sesuai output PDF
+        if (memberAfter && memberBefore.id_tier !== memberAfter.id_tier) {
+          // Menampilkan format SUKSES sesuai dokumen PDF (Halaman 12)
+          const namaTierLama = (memberBefore.tier as any).nama;
+          const namaTierBaru = (memberAfter.tier as any).nama;
+          alert(`SUKSES: Tier Member "${setujuiTarget.email_member}" telah diperbarui dari "${namaTierLama}" menjadi "${namaTierBaru}" berdasarkan total miles yang dimiliki.`);
+        } else {
+          alert(`Klaim disetujui. ${tambahanMiles} miles telah ditambahkan ke akun member.`);
+        }
+      }
+    }
+
+    fetchKlaims(); // Refresh data tabel
     setSetujuiTarget(null);
   };
 
-  const handleTolak = () => {
+  const handleTolak = async () => {
     if (!tolakTarget) return;
-    setKlaims(prev => prev.map(k =>
-      k.id === tolakTarget.id
-        ? { ...k, status_penerimaan: 'Ditolak', email_staf: emailStaf }
-        : k
-    ));
-    // TODO: PUT /api/claim-missing-miles/:id/tolak
+
+    // Update status klaim menjadi ditolak
+    const { error } = await supabase
+      .from('claim_missing_miles')
+      .update({ status_penerimaan: 'Ditolak', email_staf: emailStaf })
+      .eq('id', tolakTarget.id);
+
+    if (error) {
+      alert("Gagal menolak klaim: " + error.message);
+    } else {
+      alert("Klaim berhasil ditolak.");
+    }
+
+    fetchKlaims();
     setTolakTarget(null);
   };
 
   return (
-    <div className="page-container" style={{ maxWidth: 1100, textAlign: 'left' }}>
+    <div className="page-container" style={{ maxWidth: 1100, textAlign: 'left', backgroundColor: 'transparent', margin: '0 auto', paddingTop: '24px' }}>
 
       {/* Header */}
       <h1 className="page-title" style={{ fontSize: 26, fontWeight: 800, marginBottom: 20 }}>
