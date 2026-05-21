@@ -24,7 +24,8 @@ async function fetchTransferHistory(userEmail: string): Promise<Transfer[]> {
     return [];
   }
 
-  const all = (data || []).map((row: any) => {
+  // Deklarasi array 'all' dengan tipe Transfer[] agar terhindar dari implicit 'any'
+  const all: Transfer[] = (data || []).map((row: any) => {
     const tipe: TipeTransfer = row.email_member_1 === userEmail ? 'Kirim' : 'Terima';
     const otherEmail = tipe === 'Kirim' ? row.email_member_2 : row.email_member_1;
     const otherName = row.first_mid_name ? `${row.first_mid_name} ${row.last_name}`.trim() : otherEmail;
@@ -39,6 +40,9 @@ async function fetchTransferHistory(userEmail: string): Promise<Transfer[]> {
       tipe,
     };
   });
+
+  // Sorting yang aman menggunakan konversi ke Date dan selisih milidetik
+  all.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return all;
 }
@@ -61,7 +65,6 @@ function TransferModal({
   const handleTransfer = async () => {
     setError('');
 
-    // Basic format check frontend. Logic check fallback to DB RPC.
     if (!emailPenerima.trim()) { setError('Email penerima wajib diisi.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailPenerima)) { setError('Format email tidak valid.'); return; }
     if (emailPenerima.toLowerCase() === userEmail.toLowerCase()) { setError('Tidak dapat mentransfer miles ke diri sendiri.'); return; }
@@ -148,7 +151,6 @@ export default function TransferMiles() {
   const [showModal, setShowModal] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   
-  // State catch RPC message
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   async function loadHistory() {
@@ -199,11 +201,13 @@ export default function TransferMiles() {
     });
 
     if (error) {
-      // Return RPC exception message show in modal
       return error.message; 
     }
 
-    // Capture success message show in dashboard
+    if (data) {
+      alert(data);
+    }
+
     await Promise.all([loadHistory(), refreshAwardMiles()]);
     setShowModal(false);
     setFeedback({ type: 'success', text: data }); 
@@ -211,9 +215,8 @@ export default function TransferMiles() {
   };
 
   return (
-    <div className="page-container" style={{ width: '100%', maxWidth: 1000, textAlign: 'left' }}>
+    <div className="page-container" style={{ width: '100%', maxWidth: 1000, textAlign: 'left', backgroundColor: 'transparent', margin: '0 auto', paddingTop: '24px' }}>
       
-      {/* Feedback Banner */}
       {feedback && (
         <div style={{
           padding: '16px',

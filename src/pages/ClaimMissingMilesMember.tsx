@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import '@components/Fitur.css';
 import { supabase } from '@/supabase';
- 
+
 // Types
- 
+
 type StatusKlaim = 'Menunggu' | 'Disetujui' | 'Ditolak';
- 
+
 interface Klaim {
   id: number;
   nomor_klaim: string;
@@ -21,19 +21,19 @@ interface Klaim {
   status_penerimaan: StatusKlaim;
   timestamp: string;
 }
-interface MaskapaiOption  { kode_maskapai: string; nama_maskapai: string; }
-interface BandaraOption   { iata_code: string; nama: string; kota: string; }
- 
+
+interface MaskapaiOption { kode_maskapai: string; nama_maskapai: string; }
+interface BandaraOption  { iata_code: string; nama: string; kota: string; }
 interface ClaimMissingMilesProps { emailMember?: string; }
- 
+
 const KELAS_KABIN_OPTIONS = ['Economy', 'Premium Economy', 'Business', 'First'];
- 
+
 // Helpers
- 
+
 function nowTimestamp() {
   return new Date().toISOString().replace('T', ' ').substring(0, 19);
 }
- 
+
 function StatusBadge({ status }: { status: StatusKlaim }) {
   const styles: Record<StatusKlaim, React.CSSProperties> = {
     Disetujui: { backgroundColor: '#22c55e', color: '#fff' },
@@ -46,15 +46,15 @@ function StatusBadge({ status }: { status: StatusKlaim }) {
     </span>
   );
 }
- 
+
 // Form State
- 
+
 type FormState = {
   maskapai: string; kelas_kabin: string; bandara_asal: string;
   bandara_tujuan: string; tanggal_penerbangan: string;
   flight_number: string; nomor_tiket: string; pnr: string;
 };
- 
+
 function emptyForm(maskapaiList: MaskapaiOption[], bandaraList: BandaraOption[]): FormState {
   return {
     maskapai:            maskapaiList[0]?.kode_maskapai ?? '',
@@ -67,10 +67,12 @@ function emptyForm(maskapaiList: MaskapaiOption[], bandaraList: BandaraOption[])
     pnr:                 '',
   };
 }
- 
+
 // Klaim Form Modal
- 
-function KlaimFormModal({ mode, initialValues, existingKlaims, maskapaiList, bandaraList, onSubmit, onClose }: {
+
+function KlaimFormModal({
+  mode, initialValues, existingKlaims, maskapaiList, bandaraList, onSubmit, onClose,
+}: {
   mode: 'tambah' | 'edit';
   initialValues: FormState;
   existingKlaims: Klaim[];
@@ -82,7 +84,7 @@ function KlaimFormModal({ mode, initialValues, existingKlaims, maskapaiList, ban
   const [form, setForm] = useState<FormState>(initialValues);
   const [error, setError] = useState('');
   const set = (field: keyof FormState, val: string) => setForm(prev => ({ ...prev, [field]: val }));
- 
+
   const handleSubmit = () => {
     setError('');
     if (!form.tanggal_penerbangan)  { setError('Tanggal penerbangan wajib diisi.'); return; }
@@ -100,7 +102,7 @@ function KlaimFormModal({ mode, initialValues, existingKlaims, maskapaiList, ban
     }
     onSubmit(form);
   };
- 
+
   return (
     <div style={overlayStyle} onClick={onClose}>
       <div style={modalStyle} onClick={e => e.stopPropagation()}>
@@ -109,8 +111,7 @@ function KlaimFormModal({ mode, initialValues, existingKlaims, maskapaiList, ban
           <button onClick={onClose} style={closeButtonStyle}>×</button>
         </div>
         <div style={formGridStyle}>
- 
-          {/* Maskapai */}
+
           <div style={formGroupStyle}>
             <label style={labelStyle}>Maskapai</label>
             <select className="form-control" style={inputSm} value={form.maskapai} onChange={e => set('maskapai', e.target.value)}>
@@ -121,15 +122,14 @@ function KlaimFormModal({ mode, initialValues, existingKlaims, maskapaiList, ban
               ))}
             </select>
           </div>
- 
+
           <div style={formGroupStyle}>
             <label style={labelStyle}>Kelas Kabin</label>
             <select className="form-control" style={inputSm} value={form.kelas_kabin} onChange={e => set('kelas_kabin', e.target.value)}>
               {KELAS_KABIN_OPTIONS.map(k => <option key={k} value={k}>{k}</option>)}
             </select>
           </div>
- 
-          {/* Bandara */}
+
           <div style={formGroupStyle}>
             <label style={labelStyle}>Bandara Asal</label>
             <select className="form-control" style={inputSm} value={form.bandara_asal} onChange={e => set('bandara_asal', e.target.value)}>
@@ -140,7 +140,7 @@ function KlaimFormModal({ mode, initialValues, existingKlaims, maskapaiList, ban
               ))}
             </select>
           </div>
- 
+
           <div style={formGroupStyle}>
             <label style={labelStyle}>Bandara Tujuan</label>
             <select className="form-control" style={inputSm} value={form.bandara_tujuan} onChange={e => set('bandara_tujuan', e.target.value)}>
@@ -151,7 +151,7 @@ function KlaimFormModal({ mode, initialValues, existingKlaims, maskapaiList, ban
               ))}
             </select>
           </div>
- 
+
           <div style={formGroupStyle}>
             <label style={labelStyle}>Tanggal Penerbangan</label>
             <input type="date" className="form-control" style={inputSm} value={form.tanggal_penerbangan} onChange={e => set('tanggal_penerbangan', e.target.value)} />
@@ -169,7 +169,7 @@ function KlaimFormModal({ mode, initialValues, existingKlaims, maskapaiList, ban
             <input type="text" className="form-control" style={inputSm} value={form.pnr} onChange={e => set('pnr', e.target.value)} />
           </div>
         </div>
- 
+
         {error && <div style={{ ...errorBannerStyle, marginTop: 12 }}>{error}</div>}
         <button style={submitButtonStyle} onClick={handleSubmit}>
           {mode === 'tambah' ? 'Ajukan Klaim' : 'Simpan Perubahan'}
@@ -179,9 +179,9 @@ function KlaimFormModal({ mode, initialValues, existingKlaims, maskapaiList, ban
     </div>
   );
 }
- 
+
 // Confirm Delete Modal
- 
+
 function ConfirmDeleteModal({ onConfirm, onClose }: { onConfirm: () => void; onClose: () => void }) {
   return (
     <div style={overlayStyle} onClick={onClose}>
@@ -200,22 +200,22 @@ function ConfirmDeleteModal({ onConfirm, onClose }: { onConfirm: () => void; onC
     </div>
   );
 }
- 
+
 // Main Component
- 
+
 export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMilesProps) {
   const session       = JSON.parse(sessionStorage.getItem('aeromiles_user') ?? '{}');
   const resolvedEmail = emailMember ?? session.email ?? '';
- 
+
   const [klaims,       setKlaims]       = useState<Klaim[]>([]);
-  const [maskapaiList, setMaskapaiList] = useState<MaskapaiOption[]>([]);  
-  const [bandaraList,  setBandaraList]  = useState<BandaraOption[]>([]); 
+  const [maskapaiList, setMaskapaiList] = useState<MaskapaiOption[]>([]);
+  const [bandaraList,  setBandaraList]  = useState<BandaraOption[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [filter,       setFilter]       = useState<'Semua' | StatusKlaim>('Semua');
   const [showTambah,   setShowTambah]   = useState(false);
   const [editTarget,   setEditTarget]   = useState<Klaim | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Klaim | null>(null);
- 
+
   // Fetch reference data
   useEffect(() => {
     Promise.all([
@@ -226,7 +226,7 @@ export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMil
       if (bd) setBandaraList(bd);
     });
   }, []);
- 
+
   // Fetch klaim
   const fetchKlaims = async () => {
     if (!resolvedEmail) return;
@@ -236,7 +236,7 @@ export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMil
       .select('*')
       .eq('email_member', resolvedEmail)
       .order('timestamp', { ascending: false });
- 
+
     if (error) { console.error('fetchKlaims:', error.message); }
     else {
       setKlaims((data ?? []).map((row: any) => ({
@@ -257,10 +257,11 @@ export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMil
     }
     setLoading(false);
   };
- 
+
   useEffect(() => { fetchKlaims(); }, [resolvedEmail]);
- 
-  // CRUD 
+
+  // CRUD
+
   const handleTambah = async (form: FormState) => {
     const { error } = await supabase.from('claim_missing_miles').insert({
       email_member: resolvedEmail, maskapai: form.maskapai,
@@ -273,7 +274,7 @@ export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMil
     setShowTambah(false);
     fetchKlaims();
   };
- 
+
   const handleEdit = async (form: FormState) => {
     if (!editTarget) return;
     const { error } = await supabase.from('claim_missing_miles')
@@ -288,7 +289,7 @@ export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMil
     setEditTarget(null);
     fetchKlaims();
   };
- 
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     const { error } = await supabase.from('claim_missing_miles')
@@ -297,19 +298,19 @@ export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMil
     setDeleteTarget(null);
     fetchKlaims();
   };
- 
+
   const filtered = klaims.filter(k => filter === 'Semua' ? true : k.status_penerimaan === filter);
- 
+
   // Render
- 
+
   return (
-    <div className="page-container" style={{ maxWidth: 1100, textAlign: 'left' }}>
- 
+    <div className="page-container" style={{ maxWidth: 1100, textAlign: 'left', backgroundColor: 'transparent', margin: '0 auto', paddingTop: '24px' }}>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h1 className="page-title" style={{ fontSize: 26, fontWeight: 800, margin: 0 }}>Klaim Missing Miles</h1>
         <button className="btn-primary" onClick={() => setShowTambah(true)}>+ Ajukan Klaim</button>
       </div>
- 
+
       {/* Filter tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {(['Semua', 'Menunggu', 'Disetujui', 'Ditolak'] as const).map(tab => (
@@ -321,7 +322,7 @@ export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMil
           }}>{tab}</button>
         ))}
       </div>
- 
+
       {/* Table */}
       <div style={{ background: 'var(--white-50)', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
@@ -331,7 +332,7 @@ export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMil
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  {['No. Klaim','Maskapai','Rute','Tanggal','Flight','Kelas','Status','Tanggal Pengajuan','Aksi'].map(h => (
+                  {['ID Klaim','Maskapai','Rute','Tanggal','Flight','Kelas','Status','Tanggal Pengajuan','Aksi'].map(h => (
                     <th key={h} style={thStyle}>{h}</th>
                   ))}
                 </tr>
@@ -345,14 +346,14 @@ export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMil
                   </tr>
                 ) : filtered.map((k, i) => (
                   <tr key={k.id} style={{ borderBottom: '1px solid #f3f4f6', backgroundColor: i % 2 === 0 ? 'transparent' : '#fafafa' }}>
-                    <td style={tdStyle}><strong>{k.nomor_klaim}</strong></td>
+                    <td style={tdStyle}><strong>CLM-{k.id}</strong></td>
                     <td style={tdStyle}>{k.maskapai}</td>
                     <td style={tdStyle}><span style={{ whiteSpace: 'nowrap' }}>{k.bandara_asal} → {k.bandara_tujuan}</span></td>
                     <td style={tdStyle}>{k.tanggal_penerbangan}</td>
                     <td style={tdStyle}>{k.flight_number}</td>
                     <td style={tdStyle}>{k.kelas_kabin}</td>
                     <td style={tdStyle}><StatusBadge status={k.status_penerimaan} /></td>
-                    <td style={tdStyle}>{k.timestamp}</td>
+                    <td style={tdStyle}>{new Date(k.timestamp).toLocaleDateString('id-ID')}</td>
                     <td style={tdStyle}>
                       {k.status_penerimaan === 'Menunggu' ? (
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -368,7 +369,7 @@ export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMil
           )}
         </div>
       </div>
- 
+
       {/* Modals */}
       {showTambah && (
         <KlaimFormModal
@@ -390,7 +391,7 @@ export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMil
             tanggal_penerbangan: editTarget.tanggal_penerbangan, flight_number: editTarget.flight_number,
             nomor_tiket: editTarget.nomor_tiket, pnr: editTarget.pnr,
           }}
-          existingKlaims={klaims.filter(k => k.id !== editTarget.id)}
+          existingKlaims={klaims}
           maskapaiList={maskapaiList}
           bandaraList={bandaraList}
           onSubmit={handleEdit}
@@ -402,7 +403,7 @@ export default function ClaimMissingMilesMember({ emailMember }: ClaimMissingMil
   );
 }
 
-// Styles 
+// Styles
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
@@ -468,7 +469,7 @@ const formGroupStyle: React.CSSProperties = {
 const inputSm: React.CSSProperties = {
   padding: '10px 12px',
   fontSize: 13,
-  minWidth: 0,      
+  minWidth: 0,
   width: '100%',
   boxSizing: 'border-box',
   borderRadius: '8px',
@@ -488,13 +489,13 @@ const submitButtonStyle: React.CSSProperties = {
   background: 'linear-gradient(135deg, #6a90f0, #4d6fe0)',
   color: '#ffffff',
   fontSize: '14px',
-  fontWeight: 700,  
+  fontWeight: 700,
   border: 'none',
   cursor: 'pointer',
   boxShadow: '0 4px 14px rgba(77,111,224,0.35)',
   fontFamily: "'Inter', sans-serif",
   width: '100%',
-  marginTop: '12px',
+  marginTop: '8px',
 };
 
 const cancelButtonStyle: React.CSSProperties = {

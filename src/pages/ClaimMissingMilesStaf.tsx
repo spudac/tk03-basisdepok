@@ -216,21 +216,9 @@ export default function ClaimMissingMilesStaf({ emailStaf }: ClaimMissingMilesSt
   // Render
  
   return (
-    <div className="page-container" style={{ maxWidth: 1100, textAlign: 'left' }}>
- 
-      {/* Toast */}
-      {toast.visible && (
-        <div style={{
-          position: 'fixed', top: 20, right: 20, zIndex: 2000,
-          background: toast.isError ? '#ef4444' : '#22c55e',
-          color: '#fff', padding: '14px 20px', borderRadius: 12,
-          fontSize: 13, fontWeight: 600, maxWidth: 420,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.15)', fontFamily: "'Inter', sans-serif",
-        }}>
-          {toast.message}
-        </div>
-      )}
- 
+    <div className="page-container" style={{ maxWidth: 1100, textAlign: 'left', backgroundColor: 'transparent', margin: '0 auto', paddingTop: '24px' }}>
+
+      {/* Header */}
       <h1 className="page-title" style={{ fontSize: 26, fontWeight: 800, marginBottom: 20 }}>
         Kelola Klaim Missing Miles
       </h1>
