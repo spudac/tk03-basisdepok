@@ -61,7 +61,7 @@ function MainApp({ role }: MainAppProps) {
         return <PurchasePage member={activeMember} />;
       case 'tier': 
         if (role !== 'member') return null;
-        return <InfoTierPage member={activeMember} />;
+        return <InfoTierPage />;
       case 'report':
         if (role !== 'staf') return null;
         return <ReportPage />;
@@ -136,7 +136,7 @@ function AppContent() {
         {/* Rute Member */}
         <Route path="/redeem" element={<PageContainer><RedeemPage member={MOCK_MEMBER} /></PageContainer>} />
         <Route path="/buy-package" element={<PageContainer><PurchasePage member={MOCK_MEMBER} /></PageContainer>} />
-        <Route path="/tier-info" element={<PageContainer><InfoTierPage member={MOCK_MEMBER} /></PageContainer>} />
+        <Route path="/tier-info" element={<PageContainer><InfoTierPage /></PageContainer>} />
         <Route path="/dashboard" element={<PageContainer><DashboardPage role={role} member={MOCK_MEMBER} staf={MOCK_STAF} stats={MOCK_DASHBOARD_STATS} recentTransactions={[]} /></PageContainer>} />
         <Route path="/settings" element={<PageContainer><ProfileSettings role="member" email="user@mail.com" /></PageContainer>} />
         <Route path="/claim-miles" element={<PageContainer><ClaimMissingMilesMember /></PageContainer>} />

@@ -1,23 +1,69 @@
 // src/pages/DashboardPage.tsx
+import { useState, useEffect } from 'react';
+import { supabase } from '@/supabase';
 import type { Role, Member, Staf, DashboardStats, Transaction } from '../types';
 import './DashboardPage.css';
 
-interface DashboardProps {
-  role: Role;
-  member: Member;
-  staf: Staf;
-  stats: DashboardStats;
-  recentTransactions: Transaction[];
-}
+export default function DashboardPage() {
+  const [role, setRole] = useState<Role>('guest');
+  const [member, setMember] = useState<Member | null>(null);
+  const [staf, setStaf] = useState<Staf | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default function DashboardPage({
-  role,
-  member,
-  staf,
-  stats,
-  recentTransactions,
-}: DashboardProps) {
-  
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const userStr = sessionStorage.getItem("aeromiles_user");
+        if (!userStr) {
+          setRole('guest');
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+        setRole(user.role);
+
+        if (user.role === 'member') {
+          // Fetch parallel
+          const [profileRes, txRes] = await Promise.all([
+            supabase.rpc('get_member_profile_data', { p_email: user.email }),
+            supabase.rpc('get_recent_transactions', { p_email: user.email })
+          ]);
+
+          if (profileRes.error) throw profileRes.error;
+          if (txRes.error) throw txRes.error;
+
+          // Table return single row as array index 0
+          if (profileRes.data && profileRes.data.length > 0) {
+            setMember(profileRes.data[0]);
+          }
+
+          const mappedTxs = txRes.data.map((tx: any, idx: number) => ({
+            id: idx.toString(),
+            type: tx.type,
+            waktu: tx.waktu,
+            miles: tx.miles
+          }));
+          setRecentTransactions(mappedTxs);
+        } else if (user.role === 'staf') {
+          setStaf(user as Staf);
+          setStats({ klaim_menunggu: 0, klaim_disetujui: 0, klaim_ditolak: 0 } as DashboardStats);
+        }
+      } catch (err) {
+        console.error("Fetch dashboard error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return <div className="dashboard-container">Loading...</div>;
+  }
+
   if (role === 'guest') {
     return (
       <div className="dashboard-container guest-view">
@@ -30,7 +76,9 @@ export default function DashboardPage({
   }
 
   const isStaf = role === 'staf';
-  const userData = isStaf ? staf : member;
+  const userData = isStaf ? (staf as Staf) : (member as Member);
+  if (!userData) return null;
+
   const fullName = `${userData.salutation} ${userData.first_mid_name} ${userData.last_name}`;
 
   return (
@@ -94,7 +142,7 @@ export default function DashboardPage({
               </div>
               <div className="stat-info">
                 <span className="stat-label">Tier</span>
-                <span className={`tier-badge tier-${(userData as Member).tier_nama.toLowerCase()}`}>
+                <span className={`tier-badge tier-${(userData as Member).tier_nama?.toLowerCase() || ''}`}>
                   {(userData as Member).tier_nama}
                 </span>
               </div>
@@ -106,7 +154,7 @@ export default function DashboardPage({
               </div>
               <div className="stat-info">
                 <span className="stat-label">Total Miles</span>
-                <span className="stat-value text-black">{(userData as Member).total_miles.toLocaleString()}</span>
+                <span className="stat-value text-black">{(userData as Member).total_miles?.toLocaleString() || 0}</span>
               </div>
             </div>
 
@@ -116,7 +164,7 @@ export default function DashboardPage({
               </div>
               <div className="stat-info">
                 <span className="stat-label">Award Miles</span>
-                <span className="stat-value text-black">{(userData as Member).award_miles.toLocaleString()}</span>
+                <span className="stat-value text-black">{(userData as Member).award_miles?.toLocaleString() || 0}</span>
               </div>
             </div>
           </>
@@ -142,35 +190,39 @@ export default function DashboardPage({
               </div>
             </div>
 
-            <div className="stat-card">
-              <div className="stat-icon-wrapper light-orange-bg">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              </div>
-              <div className="stat-info">
-                <span className="stat-label">Klaim Menunggu</span>
-                <span className="stat-value text-black">{stats.klaim_menunggu}</span>
-              </div>
-            </div>
+            {stats && (
+              <>
+                <div className="stat-card">
+                  <div className="stat-icon-wrapper light-orange-bg">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </div>
+                  <div className="stat-info">
+                    <span className="stat-label">Klaim Menunggu</span>
+                    <span className="stat-value text-black">{stats.klaim_menunggu}</span>
+                  </div>
+                </div>
 
-            <div className="stat-card">
-               <div className="stat-icon-wrapper light-green-bg">
-                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              </div>
-              <div className="stat-info">
-                <span className="stat-label">Klaim Disetujui</span>
-                <span className="stat-value text-black">{stats.klaim_disetujui}</span>
-              </div>
-            </div>
+                <div className="stat-card">
+                   <div className="stat-icon-wrapper light-green-bg">
+                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  </div>
+                  <div className="stat-info">
+                    <span className="stat-label">Klaim Disetujui</span>
+                    <span className="stat-value text-black">{stats.klaim_disetujui}</span>
+                  </div>
+                </div>
 
-            <div className="stat-card">
-               <div className="stat-icon-wrapper light-red-bg">
-                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-              </div>
-              <div className="stat-info">
-                <span className="stat-label">Klaim Ditolak</span>
-                <span className="stat-value text-black">{(stats as any).klaim_ditolak || 1}</span>
-              </div>
-            </div>
+                <div className="stat-card">
+                   <div className="stat-icon-wrapper light-red-bg">
+                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  </div>
+                  <div className="stat-info">
+                    <span className="stat-label">Klaim Ditolak</span>
+                    <span className="stat-value text-black">{(stats as any).klaim_ditolak || 1}</span>
+                  </div>
+                </div>
+              </>
+            )}
           </>
         )}
       </section>

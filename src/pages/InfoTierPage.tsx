@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import './InfoTierPage.css';
+
 interface Tier {
   id_tier: string;
   nama: string;
@@ -15,51 +16,39 @@ interface MemberData {
   tier_nama: string;
 }
 
-interface TierInfoPageProps {
-  emailMember?: string; 
-}
-
-export default function TierInfoPage({ emailMember = 'user1@mail.com' }: TierInfoPageProps) {
+export default function InfoTierPage() {
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [member, setMember] = useState<MemberData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    fetchTierAndMemberData();
-  }, [emailMember]);
+    const userStr = sessionStorage.getItem("aeromiles_user");
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      fetchTierAndMemberData(user.email);
+    } else {
+      setLoading(false);
+    }
+  }, []);
 
-  const fetchTierAndMemberData = async () => {
+  const fetchTierAndMemberData = async (email: string) => {
     setLoading(true);
 
     try {
-      const { data: tierData, error: tierError } = await supabase
-        .from('tier')
-        .select('*')
-        .order('minimal_tier_miles', { ascending: true });
+      const [memRes, tierRes] = await Promise.all([
+        supabase.rpc('get_member_tier_status', { p_email: email }),
+        supabase.rpc('get_all_tiers')
+      ]);
 
-      if (tierError) throw tierError;
-      if (tierData) setTiers(tierData);
+      if (memRes.error) throw memRes.error;
+      if (tierRes.error) throw tierRes.error;
 
-      const { data: memData, error: memError } = await supabase
-        .from('member')
-        .select(`
-          nomor_member,
-          total_miles,
-          id_tier,
-          tier ( nama )
-        `)
-        .eq('email', emailMember)
-        .single();
-
-      if (memError) throw memError;
+      if (memRes.data && memRes.data.length > 0) {
+        setMember(memRes.data[0]);
+      }
       
-      if (memData) {
-        setMember({
-          nomor_member: memData.nomor_member,
-          total_miles: memData.total_miles,
-          id_tier: memData.id_tier,
-          tier_nama: (memData.tier as any)?.nama || ''
-        });
+      if (tierRes.data) {
+        setTiers(tierRes.data);
       }
     } catch (error: any) {
       console.error("Gagal mengambil data tier/member:", error.message);
@@ -73,7 +62,7 @@ export default function TierInfoPage({ emailMember = 'user1@mail.com' }: TierInf
   }
 
   if (!member) {
-    return <div style={{ padding: '40px', textAlign: 'center' }}>Data member tidak ditemukan.</div>;
+    return <div style={{ padding: '40px', textAlign: 'center' }}>Data member tidak ditemukan. Silakan login ulang.</div>;
   }
 
   const currentTierIndex = tiers.findIndex(t => t.id_tier === member.id_tier);
